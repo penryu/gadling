@@ -1,0 +1,24 @@
+{
+  "name": "gadling",
+  "version": "1.0.0",
+  "main": "dist/index.js",
+  "license": "MIT",
+  "private": true,
+  "scripts": {
+    "build": "ncc build src/index.ts --minify",
+    "dev": "ts-node src/index.ts",
+    "start": "ts-node -T src/index.ts"
+  },
+  "dependencies": {
+    "dotenv": "^16.0.1",
+    "sqlite": "^4.1.1",
+    "sqlite3": "^5.0.8"
+  },
+  "devDependencies": {
+    "@slack/bolt": "^3.11.3",
+    "@types/node": "^18.0.0",
+    "@vercel/ncc": "^0.34.0",
+    "ts-node": "^10.8.1",
+    "typescript": "^4.7.4"
+  }
+}
