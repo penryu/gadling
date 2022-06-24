@@ -39,4 +39,8 @@ export const initializePlugins = (app: App) => {
   reg.use(Help);
   reg.use(Emu);
   reg.use(Ryecock);
+
+  reg.command('/nope', async ({ ack }) => {
+    await ack();
+  });
 };
