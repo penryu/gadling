@@ -1,4 +1,5 @@
 import { App } from '@slack/bolt';
+import Eightball from './eightball';
 import Emu from './emu';
 import Help from './help';
 import Ryecock from './ryecock';
@@ -47,6 +48,7 @@ const Debug: PluginInit = (reg) => {
 export const initializePlugins = (app: App) => {
   const reg = new Registry(app)
     .use(Debug)
+    .use(Eightball)
     .use(Emu)
     .use(Help)
     .use(Ryecock)
