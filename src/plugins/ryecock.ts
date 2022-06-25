@@ -1,172 +1,231 @@
 import { App } from '@slack/bolt';
-import { PluginInit } from './index';
+
 import { articleFor, normalizeUserId, selectFrom } from '../util';
+import { PluginInit, Registry } from './index';
 
-const chilify = (user_id: string): string => {
-  const appetizer = `gives ${normalizeUserId(user_id)}`;
+export class Ryecock {
+  /**
+   * Static
+   */
 
-  let entree = `chili ${selectFrom(DeliveryDevices)}`;
-  if (Math.random() < 0.5) {
-    entree = `${selectFrom(Adjectives)} ${entree}`;
-  }
-  entree = `${articleFor(entree)} ${entree}`;
+  static readonly Adjectives: Array<string> = [
+    "animal style",
+    "appreciative",
+    "canadian",
+    "cheetah",
+    "cold",
+    "double",
+    "east coast",
+    "elastic",
+    "emergency",
+    "evening",
+    "frothy",
+    "golden",
+    "late",
+    "late night",
+    "morning",
+    "pink",
+    "power",
+    "quantum",
+    "red",
+    "saturday",
+    "standing",
+    "value",
+    "virtual",
+  ];
 
-  if (Math.random() < 0.2) {
-    const side = selectFrom(Sides);
-    entree = `${entree} with ${side}`;
-  }
+  static readonly DeliveryDevices: Array<string> = [
+    "amoeba",
+    "animal",
+    "anteater",
+    "bear",
+    "blue whale",
+    "brontosaurus",
+    "bug",
+    "canal",
+    "cat",
+    "chicken",
+    "chinchilla",
+    "coelecanth",
+    "dire wolf",
+    "dog",
+    "doge",
+    "donut",
+    "dragon",
+    "elephant",
+    "enchilada",
+    "ferret",
+    "ghost",
+    "godzilla",
+    "hug",
+    "jellyfish",
+    "kangaroo",
+    "mammoth",
+    "monkey",
+    "monster",
+    "moose",
+    "nuke",
+    "opossum",
+    "owl",
+    "pangolin",
+    "penis",
+    "pig",
+    "platypus",
+    "polar bear",
+    "pufferfish",
+    "puma",
+    "saint bernard",
+    "skunk",
+    "snake",
+    "sock",
+    "space reptile",
+    "sperm whale",
+    "sundae",
+    "tapir",
+    "troll",
+    "unicorn",
+    "vat",
+    "walrus",
+    "warthog",
+    "weasel",
+    "whale",
+    "wolf",
+    "wolverine",
+  ];
 
-  return `_${appetizer} ${entree}_` ?? selectFrom(OneOffs);
-}
+  static readonly OneOffs: Array<string> = [
+    "My hobbies include splitting wood and giving chili dogs.",
+    "Tis better to give than receive chili dogs!",
+    "_reads the latest chilizoological report_",
+  ];
 
-export const flood = (user_id: string): string => {
-  console.debug({user_id});
+  static readonly Sides: Array<string> = [
+    "a blue sock",
+    "a coco dongle",
+    "cold semen",
+    "mayo",
+    "muppet sauce",
+    "mustard",
+    "a pink sock",
+    "a red sock",
+  ];
 
-  if (Math.random() < 0.1 || !user_id) return selectFrom(OneOffs);
+  /**
+   * Floods the user with chili
+   * @param user_id - User ID of chili recipient
+   * @returns Recipient's chili gift
+   */
+  static chilify(user_id: string): string {
+    const appetizer = `gives ${normalizeUserId(user_id)}`;
 
-  return chilify(user_id);
-};
-
-const Adjectives = [
-  'animal style',
-  'appreciative',
-  'canadian',
-  'cheetah',
-  'cold',
-  'double',
-  'east coast',
-  'elastic',
-  'emergency',
-  'evening',
-  'frothy',
-  'golden',
-  'late',
-  'late night',
-  'morning',
-  'pink',
-  'power',
-  'quantum',
-  'red',
-  'saturday',
-  'standing',
-  'value',
-  'virtual',
-];
-
-const DeliveryDevices = [
-  'amoeba',
-  'animal',
-  'anteater',
-  'bear',
-  'blue whale',
-  'brontosaurus',
-  'bug',
-  'canal',
-  'cat',
-  'chicken',
-  'chinchilla',
-  'coelecanth',
-  'dire wolf',
-  'dog',
-  'doge',
-  'donut',
-  'dragon',
-  'elephant',
-  'enchilada',
-  'ferret',
-  'ghost',
-  'godzilla',
-  'hug',
-  'jellyfish',
-  'kangaroo',
-  'mammoth',
-  'monkey',
-  'monster',
-  'moose',
-  'nuke',
-  'opossum',
-  'owl',
-  'pangolin',
-  'penis',
-  'pig',
-  'platypus',
-  'polar bear',
-  'pufferfish',
-  'puma',
-  'saint bernard',
-  'skunk',
-  'snake',
-  'sock',
-  'space reptile',
-  'sperm whale',
-  'sundae',
-  'tapir',
-  'troll',
-  'unicorn',
-  'vat',
-  'walrus',
-  'warthog',
-  'weasel',
-  'whale',
-  'wolf',
-  'wolverine',
-];
-
-const OneOffs = [
-  'My hobbies include splitting wood and giving chili dogs.',
-  'Tis better to give than receive chili dogs!',
-  '_reads the latest chilizoological report_',
-];
-
-const Sides = [
-  'a blue sock',
-  'a coco dongle',
-  'cold semen',
-  'mayo',
-  'muppet sauce',
-  'mustard',
-  'a pink sock',
-  'a red sock',
-];
-
-async function floodChannel(app: App, channelName: string) {
-  const hour = 3600000;
-  const randomTimeout = () => (8 * hour) + (Math.random() * 12 * hour);
-
-  // destruct the api methods
-  const { chat, conversations } = app.client;
-  // fetch channel list
-  const channelList = await conversations.list();
-  // find channel by name
-  const channel = channelList?.channels?.find(ch => ch.name === channelName)?.id!;
-
-  const callback = async () => {
-    const response = await conversations.members({ channel });
-    const users = response.members;
-    if (users) {
-      await Promise.all(users
-        .map(user_id => {
-        chat.postMessage({ channel, text: flood(user_id) });
-      }));
-      setTimeout(callback, randomTimeout());
+    let entree = `chili ${selectFrom(Ryecock.DeliveryDevices) || 'dog'}`;
+    if (Math.random() < 0.5) {
+      const adj = selectFrom(Ryecock.Adjectives);
+      if (adj) entree = `${adj} ${entree}`;
     }
-  };
+    entree = `${articleFor(entree)} ${entree}`;
 
-  setTimeout(callback, randomTimeout());
+    if (Math.random() < 0.2) {
+      const side = selectFrom(Ryecock.Sides);
+      if (side) entree = `${entree} with ${side}`;
+    }
+
+    return `_${appetizer} ${entree}_`;
+  }
+
+  /**
+   * Invokes the chili monstor, targeting a user if available
+   * @param [user_id] - User ID of user to flood
+   * @returns The resulting chili concoction
+   */
+  static flood(user_id: string): string {
+    if (!user_id || Math.random() < 0.01) {
+      const reply = selectFrom(Ryecock.OneOffs);
+      if (reply) return reply;
+    }
+
+    return Ryecock.chilify(user_id);
+  }
+
+  /**
+   * Instance properties and methods
+   */
+
+  app: App;
+  registry: Registry;
+
+  constructor(registry: Registry) {
+    this.app = registry.app;
+    this.registry = registry;
+  }
+
+  /**
+   * Periodically floods all members of the given channel
+   * @param channelName - name of the channel to flood at intervals
+   * @param delay - minimum time (in hours) to wait between floods
+   * @param span - maximum period of time (in hours) before next flood
+   */
+  async autoFlood(channelName: string, delay = 4, span = 12) {
+    const hour = 3600000;
+    const randomTimeout = () => delay * hour + Math.random() * (span * hour);
+
+    // fetch channel list
+    const { channels } = await this.app.client.conversations.list();
+    // find channel id by name
+    const chan_id = channels?.find((ch) => ch.name === channelName)?.id;
+
+    if (!chan_id) return;
+    const callback = () => {
+      this.floodChannel(chan_id).finally(() =>
+        setTimeout(callback, randomTimeout())
+      );
+    };
+
+    setTimeout(callback, randomTimeout());
+  }
+
+  /**
+   * Floods all members of a channel with chili
+   * @param channel - The channel ID of the channel to flood
+   */
+  async floodChannel(channel: string) {
+    // destruct api calls
+    const { auth, chat, conversations } = this.app.client;
+    const { members } = await conversations.members({ channel });
+
+    if (members) {
+      const { user_id: my_id } = await auth.test();
+      await Promise.all(
+        members
+          .filter((uid) => uid !== my_id)
+          .map((user) =>
+            chat.postMessage({ channel, text: Ryecock.flood(user) })
+          )
+      );
+    }
+  }
 }
 
 export const init: PluginInit = (reg) => {
-  reg.command('/chilify', async ({ack, command, say}) => {
-    await ack();
+  const ryecock = new Ryecock(reg);
 
-    const [recipient, ..._args] = command.text.split(/\s+/, 2);
-    await say(chilify(recipient || command.user_id));
+  reg.command('/chilify', async ({ack, command, say}) => {
+    const [recipient] = command.text.split(/\s+/, 2);
+
+    await Promise.all([
+      ack(),
+      say(Ryecock.chilify(recipient || command.user_id)),
+    ]);
+  });
+
+  reg.command('/flood', async ({ack, command }) => {
+    await Promise.all([ack(), ryecock.floodChannel(command.channel_id)]);
   });
 
   reg.mention(async ({ payload, say }) => {
     if (payload.text && payload.user) {
-      if (payload.text.match(/\bchili\b/)) {
-        await say(flood(payload.user));
+      if (payload.text.match(/\bchili\b/i)) {
+        await say(Ryecock.flood(payload.user));
       }
     }
   });
@@ -174,17 +233,17 @@ export const init: PluginInit = (reg) => {
   reg.message(async ({ payload, say }) => {
     console.log('MESSAGE', payload);
 
-    const obj = payload as any;
-    if (obj?.text && obj?.user) {
-      if (obj.text.match(/\bchili\b/)) {
-        await say(flood(obj.user));
-      }
+    if (payload.subtype || !payload.text) return;
+
+    const { text, user } = payload;
+    if (user && text.match(/\bchili\b/i)) {
+      await say(Ryecock.flood(payload.user));
     }
   });
 
-  floodChannel(reg.app, 'general');
+  ryecock.autoFlood('general').catch((err) => {
+    console.error(`Can't flood channel`, err);
+  });
 };
-
-
 
 export default init;

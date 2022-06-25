@@ -1,9 +1,14 @@
 import { PluginInit } from './index';
 import { SayArguments, SlashCommand } from '@slack/bolt';
-import { flood } from './ryecock';
+import { Ryecock } from './ryecock';
 
-const Emus: Record<string, Function> = {
-  polonius: (_command: SlashCommand) => ({
+type EmuHandler = (
+  command: SlashCommand,
+  ...args: Array<unknown>
+) => SayArguments | string;
+
+const Emus: Record<string, EmuHandler> = {
+  polonius: () => ({
     blocks: [{
       type: "section",
       text: {
@@ -12,8 +17,8 @@ const Emus: Record<string, Function> = {
       },
     }],
   }),
-  ptweak: (_command: SlashCommand) => "WUTEVA! I DO WHAT I WAN!",
-  ryecock: (command: SlashCommand) => flood(command.user_id),
+  ptweak: () => "WUTEVA! I DO WHAT I WAN!",
+  ryecock: (command: SlashCommand) => Ryecock.flood(command.user_id),
 };
 
 function beHelpful(user_id: string): SayArguments | string {
@@ -27,21 +32,25 @@ function beHelpful(user_id: string): SayArguments | string {
 
 export const init: PluginInit = (reg) => {
   reg.command('/be', async ({ack, payload, say}) => {
-    await ack();
+    const ps: Array<Promise<unknown>> = [ack()];
+
     console.log('command:/be', {payload});
 
     const { user_id, text } = payload;
-    const [emu, ...args] = text.split(/\s+/, 2);
+    const [name, ...args] = text.split(/\s+/, 2);
 
-    if (emu === 'false') {
-      await say(Emus['polonius']?.(payload, args));
-    } else if (!emu) {
-      await say(beHelpful(user_id));
-    } else if (Emus[emu]) {
-      await say(Emus[emu]?.(payload, args));
+    if (!name) {
+      ps.push(say(beHelpful(user_id)));
+    } else if (name === 'false' && Emus['polonius']) {
+      ps.push(say(Emus['polonius'](payload, ...args)));
+    } else if (Emus[name]) {
+      const handler = Emus[name];
+      if (handler) ps.push(say(handler(payload, ...args)));
     } else {
-      await say(`<@${user_id}> My ${emu} emu is down at the moment.`);
+      await say(`<@${user_id}> My ${name} emu is down at the moment.`);
     }
+
+    await Promise.all(ps);
   });
 };
 

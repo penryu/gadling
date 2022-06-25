@@ -6,7 +6,8 @@
   "private": true,
   "scripts": {
     "build": "ncc build src/index.ts --minify",
-    "dev": "ts-node src/index.ts",
+    "dev": "yarn lint && ts-node src/index.ts",
+    "lint": "tsc && eslint .",
     "start": "ts-node -T src/index.ts"
   },
   "dependencies": {
@@ -17,7 +18,11 @@
   "devDependencies": {
     "@slack/bolt": "^3.11.3",
     "@types/node": "^18.0.0",
+    "@types/sqlite3": "^3.1.8",
+    "@typescript-eslint/eslint-plugin": "^5.29.0",
+    "@typescript-eslint/parser": "^5.29.0",
     "@vercel/ncc": "^0.34.0",
+    "eslint": "^8.18.0",
     "ts-node": "^10.8.1",
     "typescript": "^4.7.4"
   }

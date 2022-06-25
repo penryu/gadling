@@ -2,9 +2,12 @@
 import { homedir } from 'os';
 import { join } from 'path';
 import { App } from '@slack/bolt';
-import { initializePlugins } from './plugins';
 
-require("dotenv").config({ path: join(homedir(), ".config/hob/config") });
+import { config as dotenvConfig } from 'dotenv';
+dotenvConfig({ path: join(homedir(), ".config/hob/config") });
+
+import { Db } from './db';
+import { initializePlugins } from './plugins';
 
 const app = new App({
   appToken: process.env.SLACK_APP_TOKEN,
@@ -17,5 +20,6 @@ const app = new App({
 initializePlugins(app);
 
 (async () => {
-  await app.start(process.env.PORT || 3000);
-})();
+  await Db();
+  await app.start();
+})().catch(console.error);
