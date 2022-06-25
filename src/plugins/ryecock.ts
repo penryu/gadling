@@ -165,7 +165,7 @@ export class Ryecock {
    * @param delay - minimum time (in hours) to wait between floods
    * @param span - maximum period of time (in hours) before next flood
    */
-  async autoFlood(channelName: string, delay = 4, span = 12) {
+  async autoFlood(channelName: string, delay = 2, span = 12) {
     const hour = 3600000;
     const randomTimeout = () => delay * hour + Math.random() * (span * hour);
 
@@ -175,6 +175,7 @@ export class Ryecock {
     const chan_id = channels?.find((ch) => ch.name === channelName)?.id;
 
     if (!chan_id) return;
+
     const callback = () => {
       this.floodChannel(chan_id).finally(() =>
         setTimeout(callback, randomTimeout())
@@ -189,6 +190,7 @@ export class Ryecock {
    * @param channel - The channel ID of the channel to flood
    */
   async floodChannel(channel: string) {
+    console.log(`Flooding ${channel} ...`);
     // destruct api calls
     const { auth, chat, conversations } = this.app.client;
     const { members } = await conversations.members({ channel });

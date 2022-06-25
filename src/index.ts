@@ -11,7 +11,7 @@ import { initializePlugins } from './plugins';
 
 const app = new App({
   appToken: process.env.SLACK_APP_TOKEN,
-  developerMode: true,
+  developerMode: Boolean(process.env.DEVELOPER_MODE),
   signingSecret: process.env.SLACK_SIGNING_SECRET,
   socketMode: true,
   token: process.env.SLACK_BOT_TOKEN,
