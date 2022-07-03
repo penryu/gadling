@@ -5,17 +5,64 @@ import {
 
 import { Middleware } from '@slack/bolt';
 
-export type MessageTypes = 'app_mention' | 'command' | 'event' | 'message';
+/*
+ * Utility types
+ */
+
+export type NoneType = { _type: "Option"; some: false };
+export type SomeType<T> = { _type: "Option"; some: true; value: T };
+export type Option<T> = NoneType | SomeType<T>;
+
+export const None: NoneType = { _type: "Option", some: false } as const;
+export const Some: <T>(arg0: T) => SomeType<T> = (value) => ({
+  _type: "Option",
+  some: true,
+  value,
+});
+
+export type OkType<T> = { _type: "Result"; ok: true; value: T };
+export type ErrType = { _type: "Result"; ok: false; error: Error };
+export type Result<T> = OkType<T> | ErrType;
+
+export const Ok: <T>(value: T) => OkType<T> = (value) => ({
+  _type: "Result",
+  ok: true,
+  value,
+});
+
+export const Err = (error: Error | string): ErrType => ({
+  _type: "Result",
+  ok: false,
+  error: error instanceof Error ? error : new Error(error),
+});
+
+export const match = <T, U>(
+  opt: Option<T>,
+  someFn: (value: T) => U,
+  noneFn: () => U
+): U => (opt.some ? someFn(opt.value) : noneFn());
+
+export type MessageTypes = "app_mention" | "command" | "event" | "message";
 
 export type SlackArgs = SlackEventMiddlewareArgs;
 export type SlackCommand = SlackCommandMiddlewareArgs;
 export type SlackEvent<T extends string> = SlackEventMiddlewareArgs<T>;
-export type SlackMention = SlackEvent<'app_mention'>;
-export type SlackMessage = SlackEvent<'message'>;
+export type SlackMention = SlackEvent<"app_mention">;
+export type SlackMessage = SlackEvent<"message">;
 
-export type SlackListener = (arg0: SlackArgs) => void;
-export type CommandListener = Middleware<SlackCommandMiddlewareArgs>;
-export type EventListener<T extends string> = Middleware<SlackEventMiddlewareArgs<T>>;
-export type MentionListener = EventListener<'app_mention'>;
-export type MessageListener = EventListener<'message'>;
+export type CommandListener = (
+  cmd: BangCommand,
+  event: SlackEvent<"message">
+) => Promise<void>;
+export type EventListener<T extends string> = Middleware<
+  SlackEventMiddlewareArgs<T>
+>;
+export type MentionListener = EventListener<"app_mention">;
+export type MessageListener = EventListener<"message">;
+export type SlashCommandListener = Middleware<SlackCommandMiddlewareArgs>;
 
+export interface BangCommand {
+  command: string;
+  rest: Option<string>;
+  text: string;
+}

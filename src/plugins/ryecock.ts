@@ -1,7 +1,8 @@
 import { App } from '@slack/bolt';
 
+import log from '../log';
 import { articleFor, normalizeUserId, selectFrom } from '../util';
-import { PluginInit, Registry } from './index';
+import { PluginInit, PluginManager } from './index';
 
 export class Ryecock {
   /**
@@ -116,21 +117,28 @@ export class Ryecock {
    * @returns Recipient's chili gift
    */
   static chilify(user_id: string): string {
-    const appetizer = `gives ${normalizeUserId(user_id)}`;
+    const user = normalizeUserId(user_id);
 
-    let entree = `chili ${selectFrom(Ryecock.DeliveryDevices) || 'dog'}`;
-    if (Math.random() < 0.5) {
-      const adj = selectFrom(Ryecock.Adjectives);
-      if (adj) entree = `${adj} ${entree}`;
+    const selection = selectFrom(Ryecock.DeliveryDevices);
+    if (selection.some) {
+      const appetizer = `gives ${user}`;
+
+      let entree = `chili ${selection.value}`;
+      if (Math.random() < 0.5) {
+        const adj = selectFrom(Ryecock.Adjectives);
+        if (adj.some) entree = `${adj.value} ${entree}`;
+      }
+      entree = `${articleFor(entree)} ${entree}`;
+
+      if (Math.random() < 0.2) {
+        const side = selectFrom(Ryecock.Sides);
+        if (side.some) entree = `${entree} with ${side.value}`;
+      }
+
+      return `_${appetizer} ${entree}_`;
     }
-    entree = `${articleFor(entree)} ${entree}`;
 
-    if (Math.random() < 0.2) {
-      const side = selectFrom(Ryecock.Sides);
-      if (side) entree = `${entree} with ${side}`;
-    }
-
-    return `_${appetizer} ${entree}_`;
+    return "I appear to be out of chili, ${user}.";
   }
 
   /**
@@ -141,7 +149,7 @@ export class Ryecock {
   static flood(user_id: string): string {
     if (!user_id || Math.random() < 0.01) {
       const reply = selectFrom(Ryecock.OneOffs);
-      if (reply) return reply;
+      if (reply.some) return reply.value;
     }
 
     return Ryecock.chilify(user_id);
@@ -152,11 +160,11 @@ export class Ryecock {
    */
 
   app: App;
-  registry: Registry;
+  pm: PluginManager;
 
-  constructor(registry: Registry) {
-    this.app = registry.app;
-    this.registry = registry;
+  constructor(pm: PluginManager) {
+    this.app = pm.app;
+    this.pm = pm;
   }
 
   /**
@@ -190,8 +198,8 @@ export class Ryecock {
    * @param channel - The channel ID of the channel to flood
    */
   async floodChannel(channel: string) {
-    console.log(`Flooding ${channel} ...`);
-    // destruct api calls
+    log.info(`Flooding ${channel} ...`);
+    // destructure api calls
     const { auth, chat, conversations } = this.app.client;
     const { members } = await conversations.members({ channel });
 
@@ -208,10 +216,10 @@ export class Ryecock {
   }
 }
 
-export const init: PluginInit = (reg) => {
-  const ryecock = new Ryecock(reg);
+export const init: PluginInit = (pm) => {
+  const ryecock = new Ryecock(pm);
 
-  reg.command('/chilify', async ({ack, command, say}) => {
+  pm.slashCommand('/chilify', async ({ack, command, say}) => {
     const [recipient] = command.text.split(/\s+/, 2);
 
     await Promise.all([
@@ -220,11 +228,11 @@ export const init: PluginInit = (reg) => {
     ]);
   });
 
-  reg.command('/flood', async ({ack, command }) => {
+  pm.slashCommand('/flood', async ({ack, command }) => {
     await Promise.all([ack(), ryecock.floodChannel(command.channel_id)]);
   });
 
-  reg.mention(async ({ payload, say }) => {
+  pm.mention(async ({ payload, say }) => {
     if (payload.text && payload.user) {
       if (payload.text.match(/\bchili\b/i)) {
         await say(Ryecock.flood(payload.user));
@@ -232,9 +240,7 @@ export const init: PluginInit = (reg) => {
     }
   });
 
-  reg.message(async ({ payload, say }) => {
-    console.log('MESSAGE', payload);
-
+  pm.message(async ({ payload, say }) => {
     if (payload.subtype || !payload.text) return;
 
     const { text, user } = payload;
@@ -244,7 +250,7 @@ export const init: PluginInit = (reg) => {
   });
 
   ryecock.autoFlood('general').catch((err) => {
-    console.error(`Can't flood channel`, err);
+    log.error(`Can't flood channel`, err);
   });
 };
 

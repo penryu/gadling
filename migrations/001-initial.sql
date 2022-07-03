@@ -5,7 +5,8 @@
 CREATE TABLE facts (
   id INTEGER PRIMARY KEY,
   thing TEXT NOT NULL,
-  fact TEXT NOT NULL
+  fact TEXT NOT NULL,
+  UNIQUE(thing, fact)
 );
 
 CREATE INDEX idx_facts ON facts(thing, fact);

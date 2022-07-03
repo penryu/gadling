@@ -1,5 +1,6 @@
 import { PluginInit } from './index';
 import { SayArguments, SlashCommand } from '@slack/bolt';
+import { log } from '../log';
 import { Ryecock } from './ryecock';
 
 type EmuHandler = (
@@ -30,11 +31,11 @@ function beHelpful(user_id: string): SayArguments | string {
   return `Who should I be, <@${user_id}>?\n${emuList}`
 }
 
-export const init: PluginInit = (reg) => {
-  reg.command('/be', async ({ack, payload, say}) => {
+export const init: PluginInit = (pm) => {
+  pm.slashCommand('/be', async ({ack, payload, say}) => {
     const ps: Array<Promise<unknown>> = [ack()];
 
-    console.log('command:/be', {payload});
+    log.info('command:/be', {payload});
 
     const { user_id, text } = payload;
     const [name, ...args] = text.split(/\s+/, 2);

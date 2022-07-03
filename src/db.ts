@@ -1,25 +1,44 @@
+import os from 'os';
+import path from 'path';
+import { config as dotenvConfig } from 'dotenv';
 import { Database, open } from 'sqlite';
-import { cached } from 'sqlite3';
+import * as sqlite3 from 'sqlite3';
+
+import { log } from './log';
 import { expandPath } from './util';
 
+// read config (if module loaded outside of app; eg, scripts)
+dotenvConfig({ path: path.join(os.homedir(), ".config/hob/config") });
+
+// re-export Database type from sqlite wrapper
 export { Database } from 'sqlite';
 
-export const DataSource = expandPath(process.env.DATABASE) ?? ":memory:";
+let DataSource = ":memory:";
+let conn: Database;
 
-if (DataSource === ":memory:") {
-  console.warn(
-    "No filename specified in DATABASE environment; using in-memory store"
-  );
-}
+export async function Db(debug = true): Promise<Database> {
+  if (!conn) {
+    const { env } = process;
 
-let _db: Database;
-export const Db = async () => {
-  if (!_db) {
-    console.log(`Connecting to database ${DataSource}`);
+    if (env.DATABASE) {
+      DataSource = expandPath(env.DATABASE) ?? DataSource;
+    }
+
+    if (DataSource === ":memory:") {
+      log.warn("No DATABASE specified; using in-memory store");
+    }
+
     // eslint-disable-next-line @typescript-eslint/unbound-method
-    _db = await open({ driver: cached.Database, filename: DataSource });
-    await _db.migrate();
+    conn = await open({ driver: sqlite3.cached.Database, filename: DataSource });
+    log.info(`Connected to database ${DataSource}`);
+
+    if (debug || env.DEBUG) {
+      sqlite3.verbose();
+      conn.on('trace', (data: unknown) => log.trace('trace', data));
+    }
+
+    await conn.migrate();
   }
 
-  return _db;
-};
+  return conn;
+}

@@ -1,3 +1,4 @@
+import { normalizeUserId, selectFrom } from '../util';
 import { PluginInit } from './index';
 
 const Answers = [
@@ -26,23 +27,22 @@ const Answers = [
   "very doubtful",
 ];
 
-function ask(_question: string): string {
-  const i = Math.floor(Math.random() * Answers.length);
-  return Answers[i] ?? 'Your outlook is bleak';
-}
+export const Eightball: PluginInit = (pm) => {
+  pm.command('8ball', async ({ rest: question }, { payload, say }) => {
+    if (payload.subtype || !payload.text) return;
 
-export const init: PluginInit = (reg) => {
-  reg.message(async ({ payload, say }) => {
-    if (payload.subtype) return;
-
-    const { text } = payload;
-    const m = text?.match(/^8ball:?\s+(.+)$/i);
-
-    if (m && m[1]) {
-      const question = m[1];
-      await say(`\`${question}\`:\n>${ask(question)}`);
+    if (question.some) {
+      const answer = selectFrom(Answers);
+      const response = answer.some
+        ? `*${question.value}*: \`${answer.value}\``
+        : "Please call the plumber, I'm fresh out of predictions.";
+      await say(response);
+      return;
     }
+
+    const user = normalizeUserId(payload.user);
+    await say(`What's the question, ${user}`);
   });
 };
 
-export default init;
+export default Eightball;

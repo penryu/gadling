@@ -1,17 +1,19 @@
 #!/usr/bin/env node
-import { homedir } from 'os';
-import { join } from 'path';
+import os from 'os';
+import path from 'path';
+import { config as dotenvConfig } from 'dotenv';
 import { App } from '@slack/bolt';
 
-import { config as dotenvConfig } from 'dotenv';
-dotenvConfig({ path: join(homedir(), ".config/hob/config") });
-
 import { Db } from './db';
+import { log, slackLogger } from './log';
 import { initializePlugins } from './plugins';
+
+dotenvConfig({ path: path.join(os.homedir(), ".config/hob/config") });
 
 const app = new App({
   appToken: process.env.SLACK_APP_TOKEN,
   developerMode: Boolean(process.env.DEVELOPER_MODE),
+  logger: slackLogger,
   signingSecret: process.env.SLACK_SIGNING_SECRET,
   socketMode: true,
   token: process.env.SLACK_BOT_TOKEN,
@@ -19,7 +21,7 @@ const app = new App({
 
 initializePlugins(app);
 
-(async () => {
+void (async () => {
   await Db();
   await app.start();
-})().catch(console.error);
+})().catch(log.error);
