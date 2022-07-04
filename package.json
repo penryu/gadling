@@ -1,18 +1,15 @@
 {
   "name": "gadling",
   "version": "1.0.0",
-  "main": "dist/index.js",
+  "main": "build/src/index.js",
   "license": "MIT",
   "private": true,
   "scripts": {
-    "bundle": "ncc build src/index.ts --minify",
     "build": "yarn lint && tsc",
     "dev": "yarn lint && ts-node src/index.ts",
     "lint": "tsc --noEmit && eslint .",
     "migrate": "ts-node scripts/migrate.ts",
-    "start": "yarn start:build",
-    "start:build": "node build/index.js",
-    "start:dist": "node dist/index.js",
+    "start": "node build/src/index.js",
     "test": "jest"
   },
   "dependencies": {
@@ -29,7 +26,6 @@
     "@types/sqlite3": "^3.1.8",
     "@typescript-eslint/eslint-plugin": "^5.29.0",
     "@typescript-eslint/parser": "^5.29.0",
-    "@vercel/ncc": "^0.34.0",
     "eslint": "^8.18.0",
     "jest": "^28.1.2",
     "ts-jest": "^28.0.5",

@@ -13,10 +13,20 @@ module.exports = {
   ],
   rules: {
     "@typescript-eslint/no-unused-vars": [
-      "warn", {
+      "warn",
+      {
         argsIgnorePattern: "^_",
         varsIgnorePattern: "^_",
       },
     ],
   },
+  overrides: [
+    {
+      files: [
+        "**/__tests__/**/*.[jt]s",
+        "**/?(*.)+(spec|test).[jt]s",
+        "**/scripts/**/*.[jt]s",
+      ],
+    },
+  ],
 };

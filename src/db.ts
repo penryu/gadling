@@ -34,7 +34,6 @@ export async function Db(debug = true): Promise<Database> {
 
     if (debug || env.DEBUG) {
       sqlite3.verbose();
-      conn.on('trace', (data: unknown) => log.trace('trace', data));
     }
 
     await conn.migrate();

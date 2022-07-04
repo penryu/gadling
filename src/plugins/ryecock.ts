@@ -95,7 +95,7 @@ export class Ryecock {
   ];
 
   static readonly OneOffs: Array<string> = [
-    "My hobbies include splitting wood and giving chili dogs.",
+    "My hobbies include splitting wood and serving chili dogs.",
     "Tis better to give than receive chili dogs!",
     "_reads the latest chilizoological report_",
   ];
@@ -116,7 +116,7 @@ export class Ryecock {
    * @param user_id - User ID of chili recipient
    * @returns Recipient's chili gift
    */
-  static chilify(user_id: string): string {
+  static serve(user_id: string): string {
     const user = normalizeUserId(user_id);
 
     const selection = selectFrom(Ryecock.DeliveryDevices);
@@ -152,7 +152,7 @@ export class Ryecock {
       if (reply.some) return reply.value;
     }
 
-    return Ryecock.chilify(user_id);
+    return Ryecock.serve(user_id);
   }
 
   /**
@@ -219,17 +219,18 @@ export class Ryecock {
 export const init: PluginInit = (pm) => {
   const ryecock = new Ryecock(pm);
 
-  pm.slashCommand('/chilify', async ({ack, command, say}) => {
-    const [recipient] = command.text.split(/\s+/, 2);
+  pm.command('serve', async ({ rest }, { payload, say }) => {
+    if (payload.subtype || !payload.text || !rest.some) return;
 
-    await Promise.all([
-      ack(),
-      say(Ryecock.chilify(recipient || command.user_id)),
-    ]);
+    const [recipient] = rest.value.split(/\s+/, 2);
+
+    await say(Ryecock.serve(recipient || payload.user));
   });
 
-  pm.slashCommand('/flood', async ({ack, command }) => {
-    await Promise.all([ack(), ryecock.floodChannel(command.channel_id)]);
+  pm.command('flood', async (_bang , { payload }) => {
+    if (payload.subtype || !payload.text) return;
+
+    await ryecock.floodChannel(payload.channel);
   });
 
   pm.mention(async ({ payload, say }) => {

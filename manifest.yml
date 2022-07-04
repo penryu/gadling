@@ -1,0 +1,38 @@
+display_information:
+  name: hob
+  description: Robert Gadling
+  background_color: "#886a30"
+features:
+  bot_user:
+    display_name: hob
+    always_online: false
+oauth_config:
+  scopes:
+    bot:
+      - app_mentions:read
+      - channels:history
+      - channels:read
+      - chat:write
+      - chat:write.customize
+      - chat:write.public
+      - groups:history
+      - groups:read
+      - im:history
+      - links:read
+      - mpim:history
+      - users:read
+      - reactions:write
+settings:
+  event_subscriptions:
+    bot_events:
+      - app_mention
+      - link_shared
+      - message.channels
+      - message.groups
+      - message.im
+      - message.mpim
+  interactivity:
+    is_enabled: true
+  org_deploy_enabled: false
+  socket_mode_enabled: true
+  token_rotation_enabled: false

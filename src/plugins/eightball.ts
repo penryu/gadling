@@ -28,7 +28,7 @@ const Answers = [
 ];
 
 export const Eightball: PluginInit = (pm) => {
-  pm.command('8ball', async ({ rest: question }, { payload, say }) => {
+  pm.command("8ball", async ({ rest: question }, { payload, say }) => {
     if (payload.subtype || !payload.text) return;
 
     if (question.some) {

@@ -9,7 +9,6 @@ import {
 } from "../types";
 import { parseBangCommand, sleep } from '../util';
 import Eightball from './eightball';
-import Emu from './emu';
 import Ryecock from './ryecock';
 import Splain from './splain';
 export type PluginInit = (pm: PluginManager) => void;
@@ -28,20 +27,20 @@ export class PluginManager {
     return this;
   }
 
-  command(cmd: string, listener: CommandListener) {
-    this.commands[cmd] = listener;
+  command(command: string, handler: CommandListener) {
+    this.commands[command] = handler;
   }
 
-  mention(listener: MentionListener) {
-    this.app.event('app_mention', listener);
+  mention(handler: MentionListener) {
+    this.app.event('app_mention', handler);
   }
 
-  message(listener: MessageListener) {
-    this.app.message(listener);
+  message(handler: MessageListener) {
+    this.app.message(handler);
   }
 
-  slashCommand(cmd: string, listener: SlashCommandListener) {
-    this.app.command(cmd, listener);
+  slashCommand(cmd: string, handler: SlashCommandListener) {
+    this.app.command(cmd, handler);
   }
 }
 
@@ -69,24 +68,26 @@ const Debug: PluginInit = (pm) => {
   pm.message(async ({ payload }) => log.debug(payload));
 };
 
+
 const Help: PluginInit = (pm) => {
   pm.mention(async ({ payload, say }) => {
     if (!payload.text.includes("help")) return;
 
     await say(
       [
-        "*Commands*:",
-        " - `/be`",
-        " - `/chilify`",
-        " - `/flood`",
+        "*Bang Commands*",
+        // Help
+        " - `!help`",
+        // The 'splainer
+        " - `!learn THING := FACT`",
+        " - `!forget THING := FACT`",
+        " - `!lookup THING`",
+        " - `?THING`",
         "*Triggers*:",
         " - `chili`",
-        " - `help`",
         " - `today`",
         "Examples:",
-        " - `/be ryecock`",
-        " - `/chilify @hob`",
-        " - `@hob give me chili`",
+        " - `!help`",
       ].join("\n")
     );
   });
@@ -95,9 +96,8 @@ const Help: PluginInit = (pm) => {
 export const initializePlugins = (app: App) => {
   const pm = new PluginManager(app)
     .use(Debug)
-    .use(Eightball)
-    .use(Emu)
     .use(Help)
+    .use(Eightball)
     .use(Ryecock)
     .use(Splain)
     .use(BangCommandListener);

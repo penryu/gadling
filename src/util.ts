@@ -20,7 +20,7 @@ export function normalizeUserId(id: string): string {
 }
 
 export function parseBangCommand(text: string): Option<BangCommand> {
-  const m = text.match(/^!(\w+)(?:\s+(.+))?$/);
+  const m = text.match(/^!(\S+)(?:\s+(.+))?$/);
 
   if (m) {
     const command = m[1] as string;
