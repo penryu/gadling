@@ -8,6 +8,7 @@ import {
   SlashCommandListener,
 } from "../types";
 import { parseBangCommand, sleep } from '../util';
+import Calc from './calc';
 import Dice from './dice';
 import Eightball from './eightball';
 import Ryecock from './ryecock';
@@ -98,6 +99,7 @@ export const initializePlugins = (app: App) => {
   const pm = new PluginManager(app)
     .use(Debug)
     .use(Help)
+    .use(Calc)
     .use(Dice)
     .use(Eightball)
     .use(Ryecock)
