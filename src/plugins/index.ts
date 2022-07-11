@@ -109,7 +109,7 @@ export const initializePlugins = (app: App) => {
   pm.message(async ({ payload, say }) => {
     if (payload.subtype !== undefined) return;
 
-    if (payload.text?.match(/^\s*today(?:\.|\?)+\s*$/i)) {
+    if (payload.text?.match(/^\s*today(?:\.|\?)*\s*$/i)) {
       const dow = [
         "Sunday",
         "Monday",
