@@ -173,7 +173,7 @@ export class Ryecock {
    * @param delay - minimum time (in hours) to wait between floods
    * @param span - maximum period of time (in hours) before next flood
    */
-  async autoFlood(channelName: string, delay = 2, span = 12) {
+  async autoFlood(channelName: string, delay = 72, span = 18) {
     const hour = 3600000;
     const randomTimeout = () => delay * hour + Math.random() * (span * hour);
 
