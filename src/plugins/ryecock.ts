@@ -48,6 +48,7 @@ export class Ryecock {
     "chicken",
     "chinchilla",
     "coelecanth",
+    "colorado",
     "dire wolf",
     "dog",
     "doge",

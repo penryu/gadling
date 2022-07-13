@@ -10,6 +10,7 @@ import {
 import { parseBangCommand, sleep } from '../util';
 import Calc from './calc';
 import Dice from './dice';
+import Karma from './karma';
 import Eightball from './eightball';
 import Ryecock from './ryecock';
 import Splain from './splain';
@@ -102,6 +103,7 @@ export const initializePlugins = (app: App) => {
     .use(Calc)
     .use(Dice)
     .use(Eightball)
+    .use(Karma)
     .use(Ryecock)
     .use(Splain)
     .use(BangCommandListener);
