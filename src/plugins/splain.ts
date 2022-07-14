@@ -185,6 +185,43 @@ export const init: PluginInit = (pm) => {
       ? `${thing} == ${fact.value}`
       : `I can't find anything for \`${thing}\``);
   });
+
+  pm.message(async ({ payload, say }) => {
+    if (payload.subtype || !payload.text) return;
+
+    const m = payload.text.match(/^\s*(?:what|who) (is|are) (.+?)\?\s*$/);
+    if (!(m && m[1] && m[2])) return;
+
+    const verb = m[1];
+    const thing = m[2];
+    const fact = await selectRandomByThing(thing);
+    if (fact.some) {
+      await say(`${thing} ${verb} ${fact.value}`);
+    }
+  });
+
+  pm.message(async ({ payload }) => {
+    if (payload.subtype || !payload.text) return;
+    log.info(`called with: [${payload.text}]`);
+
+    const m = payload.text.match(/^\s*(.+?)\s+(?:is|are)\s+(.+)\s*$/);
+    if (!(m && m[1] && m[2])) return;
+
+    const { channel, ts: timestamp } = payload;
+    const thing = m[1];
+    const fact = m[2];
+    log.info(`learning: [${thing}[${fact}]`);
+
+    const result = await learn(thing, fact);
+    if (result.ok) {
+      await pm.app.client.reactions.add({
+        channel,
+        timestamp,
+        name: result.ok ? "white_check_mark" : "poop",
+      });
+    }
+  });
+
 };
 
 export default init;

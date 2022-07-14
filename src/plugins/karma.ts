@@ -72,7 +72,6 @@ export const init: PluginInit = (pm) => {
     }
   });
 
-  // convenience alias for `!lookup`
   pm.message(async ({ payload }) => {
     if (payload.subtype || !payload.text) return;
 
