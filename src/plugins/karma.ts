@@ -64,7 +64,7 @@ export const init: PluginInit = (pm) => {
 
     const thing = rest.value;
 
-    const karma = await readKarma(thing);
+    const karma = await readKarma(thing.trim());
     if (karma.ok && karma.value !== 0) {
       await say(`${thing} has karma ${karma.value}`);
     } else {
