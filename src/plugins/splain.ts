@@ -1,7 +1,10 @@
+import { ISqlite } from 'sqlite';
+
 import { EMOJI_FAIL, EMOJI_OK } from '../constants';
 import { Db } from '../db';
 import log from '../log';
 import { Err, None, Ok, Option, Result, Some } from '../types';
+
 import { PluginInit } from './index';
 
 interface FactsRow {
@@ -14,6 +17,73 @@ const IGNORED_SEARCH_TERMS = ['and', 'the', 'you'];
 const RE_passive_fetch = /^\s*(?:what|who) (is|are) (.+?)\??\s*$/i;
 const RE_passive_learn = /^\s*(.+?)\s+(?:is|are)\s+(.+)\s*$/i;
 
+type QueryTypes =
+  | "dump"
+  | "forget"
+  | "forgetAll"
+  | "learn"
+  | "lookup"
+  | "search"
+  | "selectRandom";
+
+const QUERIES: Record<QueryTypes, ISqlite.SqlType> = {
+  dump: `
+    SELECT *
+    FROM facts
+    ORDER BY inactive, thing, fact
+    LIMIT 500
+  `,
+  forget: `
+    UPDATE facts
+    SET inactive = TRUE
+    WHERE thing = ? AND fact = ?
+  `,
+  forgetAll: `
+    UPDATE facts
+    SET inactive = TRUE
+    WHERE thing = ?
+  `,
+  learn: `
+    INSERT INTO facts (thing, fact)
+    VALUES (?, ?)
+    ON CONFLICT (thing, fact) DO
+      UPDATE SET inactive = FALSE`
+  ,
+  lookup: `
+    SELECT fact
+    FROM facts
+    WHERE thing = ? AND inactive = FALSE
+    ORDER BY facts
+    LIMIT 100
+  `,
+  search: `
+    SELECT thing, fact
+    FROM facts
+    WHERE (thing LIKE $sqlTerm OR fact LIKE $sqlTerm) AND inactive = FALSE
+    ORDER BY thing, fact
+    LIMIT 100
+  `,
+  selectRandom: `
+    SELECT thing, fact
+    FROM facts
+    WHERE thing = ? AND inactive = FALSE
+    ORDER BY RANDOM()
+    LIMIT 1
+  `,
+};
+
+export async function dump(): Promise<Result<Array<FactsRow>>> {
+  log.debug(`dump`);
+
+  try {
+    const db = await Db();
+    const rows = await db.all<Array<FactsRow>>(QUERIES.dump);
+    return rows.length > 0 ? Ok(rows) : Err(`No records found`);
+  } catch (e: unknown) {
+    return Err(e instanceof Error || typeof e === "string" ? e : String(e));
+  }
+}
+
 export async function forget(
   thing: string,
   fact: string
@@ -22,12 +92,8 @@ export async function forget(
 
   try {
     const db = await Db();
-    const { changes } = await db.run(
-      `UPDATE facts SET inactive = TRUE WHERE thing = ? AND fact = ?`,
-      thing,
-      fact
-    );
-    return Ok(changes ?? 0);
+    const { changes } = await db.run(QUERIES.forget, thing, fact);
+    return (changes && changes > 0) ? Ok(changes) : Err('no changes');
   } catch (e: unknown) {
     log.error("Failed to delete [%s == %s]: %s", thing, fact, e);
     return Err(e instanceof Error || typeof e === "string" ? e : String(e));
@@ -39,10 +105,7 @@ export async function forgetAll(thing: string): Promise<Result<number>> {
 
   try {
     const db = await Db();
-    const { changes } = await db.run(
-      `UPDATE facts SET inactive = TRUE WHERE thing = ?`,
-      thing
-    );
+    const { changes } = await db.run(QUERIES.forgetAll, thing);
     return Ok(changes ?? 0);
   }
   catch (e: unknown) {
@@ -56,17 +119,7 @@ async function learn(thing: string, fact: string): Promise<Result<number>> {
 
   try {
     const db = await Db();
-    const result = await db.run(
-      `
-      INSERT INTO facts (thing, fact)
-      VALUES (?, ?)
-      ON CONFLICT (thing, fact)
-      DO UPDATE SET inactive = FALSE
-        `,
-      thing,
-      fact
-    );
-
+    const result = await db.run(QUERIES.learn, thing, fact);
     log.debug({ thing, fact, result });
     return Ok(result.changes ?? 0);
   }
@@ -81,10 +134,7 @@ async function lookup(thing: string): Promise<Result<Array<string>>> {
 
   try {
     const db = await Db();
-    const rows = await db.all<Array<FactsRow>>(
-      `SELECT fact FROM facts WHERE thing = ? AND inactive = FALSE`,
-      thing
-    );
+    const rows = await db.all<Array<FactsRow>>(QUERIES.lookup, thing);
     return rows?.length > 0
       ? Ok(rows.map((r) => r.fact))
       : Err(`No facts for ${thing}`);
@@ -104,15 +154,9 @@ async function search(term: string): Promise<Result<Array<FactsRow>>> {
   const sqlTerm = `%${term}%`;
   try {
     const db = await Db();
-    const rows = await db.all<Array<FactsRow>>(
-      `
-      SELECT thing, fact
-      FROM facts
-      WHERE (thing LIKE $sqlTerm OR fact LIKE $sqlTerm)
-      `,
-      { $sqlTerm: sqlTerm }
-    );
-
+    const rows = await db.all<Array<FactsRow>>(QUERIES.search, {
+      $sqlTerm: sqlTerm,
+    });
     return rows?.length > 0
       ? Ok(rows)
       : Err(`No facts for ${term}`);
@@ -125,16 +169,7 @@ async function search(term: string): Promise<Result<Array<FactsRow>>> {
 
 async function selectRandomByThing(thing: string): Promise<Option<string>> {
   const db = await Db();
-  const row = await db.get<FactsRow>(
-    `
-  SELECT thing, fact
-    FROM facts
-    WHERE thing = ? AND inactive = FALSE
-    ORDER BY RANDOM()
-    LIMIT 1
-    `,
-    thing
-  );
+  const row = await db.get<FactsRow>(QUERIES.selectRandom, thing);
   return row ? Some(row.fact) : None;
 }
 
@@ -218,14 +253,17 @@ export const init: PluginInit = (pm) => {
       return;
     }
 
-    const term = thing.value.trim();
-    const results = await search(term);
+    const searchTerm = thing.value.trim();
+    const results = await search(searchTerm);
     if (results.ok) {
       try {
-      const rows = results.value.map(row => JSON.stringify(row));
-      await say("```" + rows.join('\n') + "```");
+        await say(
+          "```" +
+            JSON.stringify({ searchTerm, results: results.value }, null, 2) +
+            "```"
+        );
       } catch (e) {
-        log.error('failed to search for [%s]: %s', term, e);
+        log.error('failed to search for [%s]: %s', searchTerm, e);
       }
     } else {
       await say(
@@ -283,13 +321,24 @@ export const init: PluginInit = (pm) => {
     const fact = m[2];
     log.info(`learning: [${thing}[${fact}]`);
 
-    const result = await learn(thing, fact);
-    if (result.ok) {
-      await pm.app.client.reactions.add({
-        channel,
-        timestamp,
-        name: result.ok ? EMOJI_OK : EMOJI_FAIL,
-      });
+    if (thing.length <= 42) {
+      const result = await learn(thing, fact);
+      if (result.ok) {
+        await pm.app.client.reactions.add({
+          channel,
+          timestamp,
+          name: result.ok ? EMOJI_OK : EMOJI_FAIL,
+        });
+      }
+    }
+  });
+
+  pm.command("dump!", async (_, { say }) => {
+    const results = await dump();
+    if (results.ok) {
+      await say("```" + JSON.stringify(results.value, null, "  ") + "```");
+    } else {
+      await say(`I didn't find anything! ${results.error.message}`);
     }
   });
 
