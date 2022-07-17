@@ -49,9 +49,10 @@ export class PluginManager {
 
 const BangCommandListener: PluginInit = (pm) => {
   pm.message(async (args) => {
-    if (args.payload.subtype || !args.payload.text) return;
+    const { payload } = args;
+    if (payload.subtype || !payload.text) return;
 
-    const opt_bang = parseBangCommand(args.payload.text);
+    const opt_bang = parseBangCommand(payload);
     if (opt_bang.some) {
       const bangCmd = opt_bang.value;
       const handler = pm.commands[bangCmd.command];
@@ -70,7 +71,6 @@ const Debug: PluginInit = (pm) => {
   // eslint-disable-next-line @typescript-eslint/require-await
   pm.message(async ({ payload }) => log.debug(payload));
 };
-
 
 const Help: PluginInit = (pm) => {
   pm.mention(async ({ payload, say }) => {

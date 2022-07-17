@@ -1,3 +1,4 @@
+import { EMOJI_FAIL, EMOJI_OK } from '../constants';
 import { Db } from '../db';
 import log from '../log';
 import { Err, Ok, Result } from '../types';
@@ -11,11 +12,13 @@ interface KarmaRow {
 enum KarmaChange {
   Decrement = '--',
   Increment = '++',
+  iPhoneSucks = '—',
 }
 
 const KarmaStatements: Record<KarmaChange, string> = {
   [KarmaChange.Decrement]: `UPDATE karma SET value = value - 1 WHERE thing = ?`,
   [KarmaChange.Increment]: `UPDATE karma SET value = value + 1 WHERE thing = ?`,
+  [KarmaChange.iPhoneSucks]: `UPDATE karma SET value = value - 1 WHERE thing = ?`,
 };
 
 async function bumpKarma(thing: string, change: KarmaChange): Promise<Result<number>> {
@@ -75,19 +78,15 @@ export const init: PluginInit = (pm) => {
   pm.message(async ({ payload }) => {
     if (payload.subtype || !payload.text) return;
 
-    const { channel, ts: timestamp } = payload;
-
-    const m = payload.text.match(/^\s*(\S+(?:\s\S+)*)\s?(\+\+|--)\s*$/);
+    const { channel, text, ts: timestamp } = payload;
+    const m = text.match(/^\s*(\S+(?:\s\S+)*)\s?(\+\+|--|—)\s*$/);
     if (!(m && m[1] && m[2])) return;
 
-    const [_, thing, change] = m;
-    // The regex alternation cases should ensure m[2] is a valid KarmaChange
-    const result = await bumpKarma(thing, change as KarmaChange);
-
+    const result = await bumpKarma(m[1], m[2] as KarmaChange);
     await pm.app.client.reactions.add({
       channel,
       timestamp,
-      name: result.ok ? "white_check_mark" : "poop",
+      name: result.ok ? EMOJI_OK : EMOJI_FAIL,
     });
   });
 };

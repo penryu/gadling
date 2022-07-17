@@ -32,5 +32,14 @@
     "skipDefaultLibCheck": true,
     "skipLibCheck": true
   },
-  "exclude": ["build", "dist", "node_modules"]
+  "include": [
+    "src/**/*.ts"
+  ],
+  "exclude": [
+    "build",
+    "dist",
+    "node_modules",
+    "scripts",
+    "src/**/*.test.ts"
+  ]
 }

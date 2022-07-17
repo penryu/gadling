@@ -1,4 +1,5 @@
-import { None, SomeType, Some } from './types';
+import { GenericMessageEvent } from '@slack/bolt';
+import { BangCommand, None, Some, SomeType } from './types';
 import {
   articleFor,
   expandPath,
@@ -57,27 +58,55 @@ describe('normalizeUserId', () => {
 });
 
 describe('parseBangCommand', () => {
-  it('returns None for invalid command', () => {
-    const input = 'not a bang command';
-    expect(parseBangCommand(input)).toEqual(None);
+  const baseBangPayload: GenericMessageEvent = {
+    channel: 'some-channel',
+    channel_type: 'channel',
+    event_ts: 'dummy_event_ts',
+    subtype: undefined,
+    text: 'not a bang command',
+    ts: 'dummy_timestamp',
+    type: 'message',
+    user: 'joe',
+  } as const;
+
+  const baseBangCommand: Omit<BangCommand, 'command' | 'rest' | 'text'> = {
+    channel: baseBangPayload.channel,
+    timestamp: baseBangPayload.ts,
+    user: baseBangPayload.user,
+  } as const;
+
+  it("returns None for invalid command", () => {
+    const payload = {
+      ...baseBangPayload,
+      text: "not a bang command",
+    };
+    expect(parseBangCommand(payload)).toEqual(None);
   });
 
-  it('returns value for command with no arguments', () => {
-    const text = '!pass';
-    expect(parseBangCommand(text)).toEqual(Some({
-      command: 'pass',
-      rest: None,
-      text,
-    }));
+  it("returns value for command with no arguments", () => {
+    const text = "!pass";
+    const payload = { ...baseBangPayload, text };
+    expect(parseBangCommand(payload)).toEqual(
+      Some({
+        ...baseBangCommand,
+        command: "pass",
+        rest: None,
+        text,
+      })
+    );
   });
 
-  it('returns value for command with arguments', () => {
-    const text = '!pass the salt';
-    expect(parseBangCommand(text)).toEqual(Some({
-      command: 'pass',
-      rest: Some('the salt'),
-      text,
-    }));
+  it("returns value for command with arguments", () => {
+    const text = "!pass the salt";
+    const payload = { ...baseBangPayload, text };
+    expect(parseBangCommand(payload)).toEqual(
+      Some({
+        ...baseBangCommand,
+        command: "pass",
+        rest: Some("the salt"),
+        text,
+      })
+    );
   });
 });
 

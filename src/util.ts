@@ -1,4 +1,4 @@
-import { EventFromType } from '@slack/bolt';
+import { EventFromType, KnownEventFromType } from '@slack/bolt';
 import { BangCommand, None, Option, Some } from './types';
 
 export function articleFor(term: string): string {
@@ -19,13 +19,15 @@ export function normalizeUserId(id: string): string {
   return id.startsWith('<@') ? id : `<@${id}>`;
 }
 
-export function parseBangCommand(text: string): Option<BangCommand> {
-  const m = text.match(/^!(\S+)(?:\s+(.+))?$/);
+export function parseBangCommand(payload: KnownEventFromType<'message'>): Option<BangCommand> {
+  if (payload.subtype || !payload.text) return None;
 
+  const m = payload.text.match(/^!(\S+)(?:\s+(.+))?$/);
   if (m) {
     const command = m[1] as string;
-    const rest = m[2] ? Some(m[2]) : None;
-    return Some({ command, rest: rest, text });
+    const rest = m[2] ? Some(m[2].trim()) : None;
+    const { channel, text, ts: timestamp, user } = payload;
+    return Some({ channel, command, rest, text, timestamp, user });
   }
 
   return None;

@@ -62,7 +62,10 @@ export type MessageListener = EventListener<"message">;
 export type SlashCommandListener = Middleware<SlackCommandMiddlewareArgs>;
 
 export interface BangCommand {
+  channel: string;
   command: string;
   rest: Option<string>;
   text: string;
+  timestamp: string;
+  user: string;
 }

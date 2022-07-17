@@ -28,9 +28,7 @@ const Answers = [
 ];
 
 export const Eightball: PluginInit = (pm) => {
-  pm.command("8ball", async ({ rest: question }, { payload, say }) => {
-    if (payload.subtype || !payload.text) return;
-
+  pm.command("8ball", async ({ rest: question, user }, { say }) => {
     if (question.some) {
       const answer = selectFrom(Answers);
       const response = answer.some
@@ -40,8 +38,7 @@ export const Eightball: PluginInit = (pm) => {
       return;
     }
 
-    const user = normalizeUserId(payload.user);
-    await say(`What's the question, ${user}`);
+    await say(`What's the question, ${normalizeUserId(user)}`);
   });
 };
 
