@@ -9,6 +9,8 @@ interface FactsRow {
   fact: string;
 }
 
+const IGNORED_SEARCH_TERMS = ['and', 'the', 'you'];
+
 const RE_passive_fetch = /^\s*(?:what|who) (is|are) (.+?)\??\s*$/i;
 const RE_passive_learn = /^\s*(.+?)\s+(?:is|are)\s+(.+)\s*$/i;
 
@@ -94,7 +96,7 @@ async function lookup(thing: string): Promise<Result<Array<string>>> {
 }
 
 async function search(term: string): Promise<Result<Array<FactsRow>>> {
-  if (term.length < 3 || ["the", "you"].includes(term))
+  if (term.length < 3 || IGNORED_SEARCH_TERMS.includes(term))
     return Err("query too short");
 
   log.debug(`search: ${term}`);
