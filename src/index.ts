@@ -10,18 +10,21 @@ import { initializePlugins } from './plugins';
 
 dotenvConfig({ path: path.join(os.homedir(), ".config/hob/config") });
 
-const app = new App({
-  appToken: process.env.SLACK_APP_TOKEN,
-  developerMode: Boolean(process.env.DEVELOPER_MODE),
-  logger: slackLogger,
-  signingSecret: process.env.SLACK_SIGNING_SECRET,
-  socketMode: true,
-  token: process.env.SLACK_BOT_TOKEN,
-});
-
-initializePlugins(app);
-
 void (async () => {
+  const app = new App({
+    appToken: process.env.SLACK_APP_TOKEN,
+    developerMode: Boolean(process.env.DEVELOPER_MODE),
+    logger: slackLogger,
+    signingSecret: process.env.SLACK_SIGNING_SECRET,
+    socketMode: true,
+    token: process.env.SLACK_BOT_TOKEN,
+  });
+
+  initializePlugins(app);
+
   await Db();
   await app.start();
-})().catch(log.error);
+})().catch((reason) => {
+  log.error("Encountered fatal error: %s", reason);
+  process.exit(7);
+});

@@ -1,10 +1,16 @@
-FROM node:18 AS builder
-WORKDIR /build
+FROM rust:alpine AS hpnc
+RUN cargo install hpn-client
+
+FROM node:alpine AS builder
+WORKDIR /work
 COPY . .
-RUN yarn install --frozen-lockfile && yarn build
+RUN yarn install --frozen-lockfile
+RUN yarn build
 
-FROM node:18-alpine
+FROM node:alpine
 WORKDIR /app
-COPY --from=builder /build/dist/index.js hob.js
-CMD ["node", "hob.js"]
-
+COPY --from=builder /work/build /work/package.json /work/yarn.lock ./
+COPY --from=builder /work/migrations migrations/
+COPY --from=hpnc /usr/local/cargo/bin/hpnc /usr/local/bin
+RUN yarn install --frozen-lockfile --production
+CMD ["node", "index.js"]
