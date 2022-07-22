@@ -1,9 +1,8 @@
 import {
-  SlackCommandMiddlewareArgs,
+  GenericMessageEvent,
+  Middleware,
   SlackEventMiddlewareArgs,
 } from "@slack/bolt";
-
-import { Middleware } from '@slack/bolt';
 
 /*
  * Utility types
@@ -36,19 +35,7 @@ export const Err = (error: Error | string): ErrType => ({
   error: error instanceof Error ? error : new Error(error),
 });
 
-export const match = <T, U>(
-  opt: Option<T>,
-  someFn: (value: T) => U,
-  noneFn: () => U
-): U => (opt.some ? someFn(opt.value) : noneFn());
-
-export type MessageTypes = "app_mention" | "command" | "event" | "message";
-
-export type SlackArgs = SlackEventMiddlewareArgs;
-export type SlackCommand = SlackCommandMiddlewareArgs;
 export type SlackEvent<T extends string> = SlackEventMiddlewareArgs<T>;
-export type SlackMention = SlackEvent<"app_mention">;
-export type SlackMessage = SlackEvent<"message">;
 
 export type CommandListener = (
   cmd: BangCommand,
@@ -57,15 +44,25 @@ export type CommandListener = (
 export type EventListener<T extends string> = Middleware<
   SlackEventMiddlewareArgs<T>
 >;
-export type MentionListener = EventListener<"app_mention">;
 export type MessageListener = EventListener<"message">;
-export type SlashCommandListener = Middleware<SlackCommandMiddlewareArgs>;
 
 export interface BangCommand {
   channel: string;
   command: string;
+  payload: GenericMessageEvent,
   rest: Option<string>;
   text: string;
   timestamp: string;
   user: string;
+}
+
+export interface CommandHandler {
+  command: string;
+  help: Array<string>;
+  listener: CommandListener;
+}
+
+export interface MessageHandler {
+  help: Array<string>;
+  listener: MessageListener;
 }

@@ -17,7 +17,7 @@ const HELP = {
 };
 
 export const Calc: PluginInit = (pm) => {
-  pm.command("calc", async ({ rest }, { say }) => {
+  pm.command("calc", [HELP.calc], async ({ rest }, { say }) => {
     const calcBin = ENV['HOB_CALC'] || 'hpnc';
 
     if (rest.some) {

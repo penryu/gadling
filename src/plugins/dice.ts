@@ -10,13 +10,19 @@ const MAX_FACES = 100;
 const REDiceRoll = /^(\d{1,3})?d(\d{1,3})\s*$/;
 
 const HELP = {
-  dice: `Usage: \`[COUNT]dFACES\`
-- \`COUNT\` - optional number of dice (1-${MAX_COUNT}; default: 1)
-- \`FACES\` - number of faces on each die (2-${MAX_FACES})
-Example: \`!dice 2d6\` => \`2d6 => 3 | 5\``,
-  rand: `Usage: \`!rand [N]\`
-- \`N\` - positive maximum integer, exclusive
-If \`N\` is not provided, returns a random real number \`[0, 1)\``,
+  dice:
+    "```" +
+    `Usage: [COUNT]dFACES
+  - COUNT - optional number of dice (1-${MAX_COUNT}; default: 1)
+  - FACES - number of faces on each die (2-${MAX_FACES})
+Example: \`!dice 2d6\` => \`2d6 => 3 | 5\`` +
+    "```",
+  rand:
+    "```" +
+    `Usage: !rand [N]
+  where N is a positive maximum possible integer, exclusive
+  If N is not provided, returns a random real number [0, 1)` +
+    "```",
 };
 
 const parseDice = (text: string): Option<DiceSpec> => {
@@ -50,7 +56,7 @@ function roll(text: string): Option<string> {
 }
 
 export const Dice: PluginInit = (pm) => {
-  pm.command("rand", async ({ rest }, { say }) => {
+  pm.command("rand", [HELP.rand], async ({ rest }, { say }) => {
     if (rest.some) {
       if (rest.value.match(/^\d+$/)) {
         const max = parseInt(rest.value);
@@ -66,7 +72,7 @@ export const Dice: PluginInit = (pm) => {
     await say(HELP.rand);
   });
 
-  pm.command("dice", async ({ rest }, { say }) => {
+  pm.command("dice", [HELP.dice], async ({ rest }, { say }) => {
     log.info("Dice: command: !dice %s", rest);
 
     if (rest.some) {
@@ -80,16 +86,18 @@ export const Dice: PluginInit = (pm) => {
     await say(HELP.dice);
   });
 
-  pm.message(async ({ payload, say }) => {
-    if (payload.subtype || !payload.text) return;
+  pm.message(
+    ["parses all messages for potential dice rolls"],
+    async ({ payload, say }) => {
+      if (payload.subtype || !payload.text) return;
 
-    const output = roll(payload.text);
-    if (output.some) {
-      log.info("Dice: message: %o", payload);
-      await say(output.value);
+      const output = roll(payload.text);
+      if (output.some) {
+        log.info("Dice: message: %o", payload);
+        await say(output.value);
+      }
     }
-  });
-
+  );
 };
 
 export default Dice;

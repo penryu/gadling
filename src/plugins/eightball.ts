@@ -28,18 +28,22 @@ const Answers = [
 ];
 
 export const Eightball: PluginInit = (pm) => {
-  pm.command("8ball", async ({ rest: question, user }, { say }) => {
-    if (question.some) {
-      const answer = selectFrom(Answers);
-      const response = answer.some
-        ? `*${question.value}*: \`${answer.value}\``
-        : "Please call the plumber, I'm fresh out of predictions.";
-      await say(response);
-      return;
-    }
+  pm.command(
+    "8ball",
+    ["asks the Magic 8-ball for the answers you seek"],
+    async ({ rest: question, user }, { say }) => {
+      if (question.some) {
+        const answer = selectFrom(Answers);
+        const response = answer.some
+          ? `*${question.value}*: \`${answer.value}\``
+          : "Please call the plumber, I'm fresh out of predictions.";
+        await say(response);
+        return;
+      }
 
-    await say(`What's the question, ${normalizeUserId(user)}`);
-  });
+      await say(`What's the question, ${normalizeUserId(user)}`);
+    }
+  );
 };
 
 export default Eightball;

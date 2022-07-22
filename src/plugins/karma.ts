@@ -41,8 +41,8 @@ async function bumpKarma(thing: string, change: KarmaChange): Promise<Result<num
   }
 }
 
-async function readKarma(thing: string): Promise<Result<number>> {
-  log.debug(`readKarma: ${thing}`);
+async function karmaFor(thing: string): Promise<Result<number>> {
+  log.debug(`karmaFor: ${thing}`);
 
   try {
     const db = await Db();
@@ -59,7 +59,7 @@ async function readKarma(thing: string): Promise<Result<number>> {
 }
 
 export const init: PluginInit = (pm) => {
-  pm.command("karma", async ({ rest }, { say }) => {
+  pm.command("karma", ["FIXME"], async ({ rest }, { say }) => {
     if (!rest.some) {
       await say("Usage: `!karma THING`");
       return;
@@ -67,7 +67,7 @@ export const init: PluginInit = (pm) => {
 
     const thing = rest.value;
 
-    const karma = await readKarma(thing.trim());
+    const karma = await karmaFor(thing.trim());
     if (karma.ok && karma.value !== 0) {
       await say(`${thing} has karma ${karma.value}`);
     } else {
@@ -75,7 +75,7 @@ export const init: PluginInit = (pm) => {
     }
   });
 
-  pm.message(async ({ payload }) => {
+  pm.message(["FIXME"], async ({ payload }) => {
     if (payload.subtype || !payload.text) return;
 
     const { channel, text, ts: timestamp } = payload;

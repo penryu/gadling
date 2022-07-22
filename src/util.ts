@@ -27,7 +27,7 @@ export function parseBangCommand(payload: KnownEventFromType<'message'>): Option
     const command = m[1] as string;
     const rest = m[2] ? Some(m[2].trim()) : None;
     const { channel, text, ts: timestamp, user } = payload;
-    return Some({ channel, command, rest, text, timestamp, user });
+    return Some({ channel, command, payload, rest, text, timestamp, user });
   }
 
   return None;

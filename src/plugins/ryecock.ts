@@ -220,7 +220,7 @@ export class Ryecock {
 export const init: PluginInit = (pm) => {
   const ryecock = new Ryecock(pm);
 
-  pm.command('serve', async ({ rest, user }, { say }) => {
+  pm.command("serve", ["FIXME"], async ({ rest, user }, { say }) => {
     if (!rest.some) return;
 
     const [recipient] = rest.value.split(/\s+/, 2);
@@ -228,19 +228,11 @@ export const init: PluginInit = (pm) => {
     await say(Ryecock.serve(recipient || user));
   });
 
-  pm.command('flood', async ({ channel }) => {
+  pm.command("flood", ["FIXME"], async ({ channel }) => {
     await ryecock.floodChannel(channel);
   });
 
-  pm.mention(async ({ payload, say }) => {
-    if (payload.text && payload.user) {
-      if (payload.text.match(/\bchili\b/i)) {
-        await say(Ryecock.flood(payload.user));
-      }
-    }
-  });
-
-  pm.message(async ({ payload, say }) => {
+  pm.message(["FIXME"], async ({ payload, say }) => {
     if (payload.subtype || !payload.text) return;
 
     const { text, user } = payload;

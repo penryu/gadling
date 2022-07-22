@@ -12,8 +12,6 @@ interface FactsRow {
   fact: string;
 }
 
-const IGNORED_SEARCH_TERMS = ['and', 'the', 'you'];
-
 const RE_passive_fetch = /^\s*(?:what|who) (is|are) (.+?)\??\s*$/i;
 const RE_passive_learn = /^\s*(.+?)\s+(?:is|are)\s+(.+)\s*$/i;
 
@@ -53,7 +51,7 @@ const QUERIES: Record<QueryTypes, ISqlite.SqlType> = {
     SELECT fact
     FROM facts
     WHERE thing = ? AND inactive = FALSE
-    ORDER BY facts
+    ORDER BY fact
     LIMIT 100
   `,
   search: `
@@ -146,7 +144,7 @@ async function lookup(thing: string): Promise<Result<Array<string>>> {
 }
 
 async function search(term: string): Promise<Result<Array<FactsRow>>> {
-  if (term.length < 3 || IGNORED_SEARCH_TERMS.includes(term))
+  if (term.length < 3)
     return Err("query too short");
 
   log.debug(`search: ${term}`);
@@ -174,25 +172,30 @@ async function selectRandomByThing(thing: string): Promise<Option<string>> {
 }
 
 export const init: PluginInit = (pm) => {
-  pm.command("forget", async ({ channel, rest, timestamp }, { say }) => {
-    if (!rest.some) return;
+  pm.command(
+    "forget",
+    ["FIXME"],
+    async ({ channel, rest, timestamp }, { say }) => {
+      if (!rest.some) return;
 
-    const [thing, fact] = rest.value.split(":=", 2).map((s) => s.trim());
-    if (!(thing && fact)) {
-      await say("Usage: `!forget THING := FACT`");
-      return;
+      const [thing, fact] = rest.value.split(":=", 2).map((s) => s.trim());
+      if (!(thing && fact)) {
+        await say("Usage: `!forget THING := FACT`");
+        return;
+      }
+
+      const result = await forget(thing, fact);
+      await pm.app.client.reactions.add({
+        channel,
+        timestamp,
+        name: result.ok ? EMOJI_OK : EMOJI_FAIL,
+      });
     }
-
-    const result = await forget(thing, fact);
-    await pm.app.client.reactions.add({
-      channel,
-      timestamp,
-      name: result.ok ? EMOJI_OK : EMOJI_FAIL,
-    });
-  });
+  );
 
   pm.command(
     "forget*",
+    ["FIXME"],
     async ({ channel, rest: thing, timestamp }, { say }) => {
       if (!thing) {
         await say("Usage: `!forget* THING`");
@@ -212,6 +215,7 @@ export const init: PluginInit = (pm) => {
 
   pm.command(
     "learn",
+    ["FIXME"],
     async ({ channel, rest: expr, text, timestamp }, { say }) => {
       if (!expr.some) return;
 
@@ -232,7 +236,7 @@ export const init: PluginInit = (pm) => {
     }
   );
 
-  pm.command("lookup", async ({ rest: thing }, { say }) => {
+  pm.command("lookup", ["FIXME"], async ({ channel, rest: thing }, { say }) => {
     if (!thing.some) {
       await say("Usage: `!lookup THING`");
       return;
@@ -240,40 +244,55 @@ export const init: PluginInit = (pm) => {
 
     const results = await lookup(thing.value);
     if (results.ok) {
-      const facts = results.value.map((fact: string) => `- \`${fact}\`\n`);
-      await say(`${thing.value}\n${facts.join("\n")}`);
+      await pm.app.client.files.upload({
+        channels: channel,
+        content: JSON.stringify(results.value, null, 2),
+        filetype: "javascript",
+        title: thing.value,
+      });
     } else {
       await say(`I don't have anything for \`${thing.value}\``);
     }
   });
 
-  pm.command("search", async ({ rest: thing }, { say }) => {
-    if (!thing.some) {
-      await say("Usage: `!search WORD`");
-      return;
-    }
-
-    const searchTerm = thing.value.trim();
-    const results = await search(searchTerm);
-    if (results.ok) {
-      try {
-        await say(
-          "```" +
-            JSON.stringify({ searchTerm, results: results.value }, null, 2) +
-            "```"
-        );
-      } catch (e) {
-        log.error('failed to search for [%s]: %s', searchTerm, e);
+  pm.command(
+    "search",
+    ["FIXME"],
+    async ({ channel, payload, rest: thing }, { say }) => {
+      if (!thing.some) {
+        await say("Usage: `!search WORD`");
+        return;
       }
-    } else {
-      await say(
-        `I don't have anything for \`${thing.value}\`: \`${results.error.message}\``
-      );
+
+      const searchTerm = thing.value.trim();
+      const results = await search(searchTerm);
+      if (results.ok) {
+        try {
+          const { thread_ts, ts } = payload;
+          await pm.app.client.files.upload({
+            channels: channel,
+            content: JSON.stringify(
+              { searchTerm, results: results.value },
+              null,
+              2
+            ),
+            filetype: "javascript",
+            thread_ts: thread_ts ?? ts,
+            title: searchTerm,
+          });
+        } catch (e) {
+          log.error("failed to search for [%s]: %s", searchTerm, e);
+        }
+      } else {
+        await say(
+          `I don't have anything for \`${thing.value}\`: \`${results.error.message}\``
+        );
+      }
     }
-  });
+  );
 
   // `?$thing`: convenience alias for `!lookup`
-  pm.message(async ({ payload, say }) => {
+  pm.message(["FIXME"], async ({ payload, say }) => {
     if (payload.subtype || !payload.text) return;
 
     const m = payload.text.match(/^\?(.+?)\s*$/);
@@ -281,13 +300,15 @@ export const init: PluginInit = (pm) => {
 
     const thing = m[1];
     const fact = await selectRandomByThing(thing);
-    await say(fact.some
-      ? `${thing} == ${fact.value}`
-      : `I can't find anything for \`${thing}\``);
+    await say(
+      fact.some
+        ? `${thing} == ${fact.value}`
+        : `I can't find anything for \`${thing}\``
+    );
   });
 
   // respond to `what/who is/are $thing`
-  pm.message(async ({ payload, say }) => {
+  pm.message(["FIXME"], async ({ payload, say }) => {
     if (payload.subtype || !payload.text) return;
 
     const m = payload.text.match(RE_passive_fetch);
@@ -302,7 +323,7 @@ export const init: PluginInit = (pm) => {
   });
 
   // learn `$thing is $fact`
-  pm.message(async ({ payload }) => {
+  pm.message(["FIXME"], async ({ payload }) => {
     if (payload.subtype || !payload.text) return;
 
     const text = payload.text.trim();
@@ -319,7 +340,7 @@ export const init: PluginInit = (pm) => {
     const { channel, ts: timestamp } = payload;
     const thing = m[1];
     const fact = m[2];
-    log.info(`learning: [${thing}[${fact}]`);
+    log.debug(`learning: [${thing}[${fact}]`);
 
     if (thing.length <= 42) {
       const result = await learn(thing, fact);
@@ -333,7 +354,7 @@ export const init: PluginInit = (pm) => {
     }
   });
 
-  pm.command("dump!", async (_, { say }) => {
+  pm.command("dump!", ["FIXME"], async (_, { say }) => {
     const results = await dump();
     if (results.ok) {
       await say("```" + JSON.stringify(results.value, null, "  ") + "```");
@@ -341,7 +362,6 @@ export const init: PluginInit = (pm) => {
       await say(`I didn't find anything! ${results.error.message}`);
     }
   });
-
 };
 
 export default init;
