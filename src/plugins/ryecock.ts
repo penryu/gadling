@@ -220,26 +220,40 @@ export class Ryecock {
 export const init: PluginInit = (pm) => {
   const ryecock = new Ryecock(pm);
 
-  pm.command("serve", ["FIXME"], async ({ rest, user }, { say }) => {
-    if (!rest.some) return;
+  pm.command(
+    "serve",
+    [
+      "Ensures the recipient receives the US RDA of chili",
+      "`!serve @guest`",
+    ],
+    async ({ rest, user }, { say }) => {
+      if (!rest.some) return;
 
-    const [recipient] = rest.value.split(/\s+/, 2);
+      const [recipient] = rest.value.split(/\s+/, 2);
 
-    await say(Ryecock.serve(recipient || user));
-  });
-
-  pm.command("flood", ["FIXME"], async ({ channel }) => {
-    await ryecock.floodChannel(channel);
-  });
-
-  pm.message(["FIXME"], async ({ payload, say }) => {
-    if (payload.subtype || !payload.text) return;
-
-    const { text, user } = payload;
-    if (user && text.match(/\bchili\b/i)) {
-      await say(Ryecock.flood(payload.user));
+      await say(Ryecock.serve(recipient || user));
     }
-  });
+  );
+
+  pm.command(
+    "flood",
+    ["Flood the channel with chili", "`!flood`"],
+    async ({ channel }) => {
+      await ryecock.floodChannel(channel);
+    }
+  );
+
+  pm.message(
+    ["Mention `chili` and ye shall receive"],
+    async ({ payload, say }) => {
+      if (payload.subtype || !payload.text) return;
+
+      const { text, user } = payload;
+      if (user && text.match(/\bchili\b/i)) {
+        await say(Ryecock.flood(payload.user));
+      }
+    }
+  );
 
   ryecock.autoFlood('general').catch((err) => {
     log.error(`Can't flood channel`, err);

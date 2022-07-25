@@ -1,43 +1,13 @@
-import os from 'os';
-import path from 'path';
-import { config as dotenvConfig } from 'dotenv';
-import { Database, open } from 'sqlite';
-import * as sqlite3 from 'sqlite3';
+import { env } from 'process';
+import * as pg from 'pg';
 
-import { log } from './log';
-import { expandPath } from './util';
+let pool: pg.Pool;
 
-// read config (if module loaded outside of app; eg, scripts)
-dotenvConfig({ path: path.join(os.homedir(), ".config/hob/config") });
-
-// re-export Database type from sqlite wrapper
-export { Database } from 'sqlite';
-
-let DataSource = ":memory:";
-let conn: Database;
-
-export async function Db(debug = true): Promise<Database> {
-  if (!conn) {
-    const { env } = process;
-
-    if (env.DATABASE) {
-      DataSource = expandPath(env.DATABASE) ?? DataSource;
-    }
-
-    if (DataSource === ":memory:") {
-      log.warn("No DATABASE specified; using in-memory store");
-    }
-
-    // eslint-disable-next-line @typescript-eslint/unbound-method
-    conn = await open({ driver: sqlite3.cached.Database, filename: DataSource });
-    log.info(`Connected to database ${DataSource}`);
-
-    if (debug || env.DEBUG) {
-      sqlite3.verbose();
-    }
-
-    await conn.migrate();
+export const getPool = (): pg.Pool => {
+  if (!pool) {
+    const connectionString = env.DATABASE_URL;
+    pool = new pg.Pool({ connectionString });
   }
 
-  return conn;
+  return pool;
 }

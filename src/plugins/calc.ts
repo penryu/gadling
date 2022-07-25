@@ -8,7 +8,7 @@ import { PluginInit } from './index';
 const execFile = promisify(childproc.execFile);
 
 const HELP = {
-  calc: `Usage: \`!calc EXPR\`
+  calc: `\`!calc EXPR\`
   - \`EXPR\` - RPN-style expression to evaluate
   The expression is evaluated one token at a time.
   The values of all registers are displayed after evaluating each token.

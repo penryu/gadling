@@ -1,13 +1,11 @@
+import * as db from 'zapatos/db';
+import type * as s from 'zapatos/schema';
+
 import { EMOJI_FAIL, EMOJI_OK } from '../constants';
-import { Db } from '../db';
+import { getPool } from '../db';
 import log from '../log';
 import { Err, Ok, Result } from '../types';
 import { PluginInit } from './index';
-
-interface KarmaRow {
-  thing: string;
-  value: number;
-}
 
 enum KarmaChange {
   Decrement = '--',
@@ -15,29 +13,29 @@ enum KarmaChange {
   iPhoneSucks = '—',
 }
 
-const KarmaStatements: Record<KarmaChange, string> = {
-  [KarmaChange.Decrement]: `UPDATE karma SET value = value - 1 WHERE thing = ?`,
-  [KarmaChange.Increment]: `UPDATE karma SET value = value + 1 WHERE thing = ?`,
-  [KarmaChange.iPhoneSucks]: `UPDATE karma SET value = value - 1 WHERE thing = ?`,
-};
-
-async function bumpKarma(thing: string, change: KarmaChange): Promise<Result<number>> {
+async function bumpKarma(thing: string, change: KarmaChange): Promise<Result<boolean>> {
   log.debug(`increment: ${thing}`);
 
   try {
-    const db = await Db();
-    await db.run('INSERT OR IGNORE INTO karma (thing) VALUES (?)', thing);
-    const update = await db.run(KarmaStatements[change], thing);
-    const { changes, stmt } = update;
+    await db.serializable(getPool(), async (txClient) => {
+      const record = { thing, value: 0 };
+      await db.sql`
+        INSERT INTO ${"karma"} (${db.cols(record)}) VALUES (${db.vals(record)})
+        ON CONFLICT (${"thing"}) DO NOTHING
+      `.run(txClient);
 
-    log.debug({ thing, change, stmt, changes });
-    return (changes && changes > 0)
-      ? Ok(changes)
-      : Err(`No change: ${thing}${change}`);
-  }
-  catch (e: unknown) {
+      const op = change === KarmaChange.Increment ? db.sql`+` : db.sql`-`;
+      await db.sql<s.karma.SQL, s.karma.Selectable[]>`
+        UPDATE ${"karma"} SET ${"value"} = ${"value"} ${op} 1
+        WHERE ${{ thing }}
+        RETURNING ${"value"}
+      `.run(txClient);
+    });
+
+    return Ok(true);
+  } catch (e: unknown) {
     log.error("Failed to update karma %s for %s: %s", change, thing, e);
-    return Err((e instanceof Error || typeof e === 'string') ? e : String(e));
+    return Err(e instanceof Error || typeof e === "string" ? e : String(e));
   }
 }
 
@@ -45,11 +43,7 @@ async function karmaFor(thing: string): Promise<Result<number>> {
   log.debug(`karmaFor: ${thing}`);
 
   try {
-    const db = await Db();
-    const row = await db.get<KarmaRow>(
-      `SELECT value FROM karma WHERE thing = ?`,
-      thing
-    );
+    const row = await db.selectOne('karma', { thing }).run(getPool());
     return row ? Ok(row.value) : Err(`No karma for ${thing}`);
   }
   catch (e: unknown) {
@@ -59,36 +53,43 @@ async function karmaFor(thing: string): Promise<Result<number>> {
 }
 
 export const init: PluginInit = (pm) => {
-  pm.command("karma", ["FIXME"], async ({ rest }, { say }) => {
-    if (!rest.some) {
-      await say("Usage: `!karma THING`");
-      return;
+  pm.command(
+    "karma",
+    ["`!karma THING` retrieves the current karma for THING"],
+    async ({ rest }, { say }) => {
+      if (!rest.some) {
+        await say("Usage: `!karma THING`");
+        return;
+      }
+
+      const thing = rest.value;
+
+      const karma = await karmaFor(thing.trim());
+      if (karma.ok && karma.value !== 0) {
+        await say(`${thing} has karma ${karma.value}`);
+      } else {
+        await say(`${thing} has neutral karma`);
+      }
     }
+  );
 
-    const thing = rest.value;
+  pm.message(
+    ["Use `THING++` or `THING--` to adjust change the karma for THING"],
+    async ({ payload }) => {
+      if (payload.subtype || !payload.text) return;
 
-    const karma = await karmaFor(thing.trim());
-    if (karma.ok && karma.value !== 0) {
-      await say(`${thing} has karma ${karma.value}`);
-    } else {
-      await say(`${thing} has neutral karma`);
+      const { channel, text, ts: timestamp } = payload;
+      const m = text.match(/^\s*(\S+(?:\s\S+)*)\s?(\+\+|--|—)\s*$/);
+      if (!(m && m[1] && m[2])) return;
+
+      const result = await bumpKarma(m[1], m[2] as KarmaChange);
+      await pm.app.client.reactions.add({
+        channel,
+        timestamp,
+        name: result.ok ? EMOJI_OK : EMOJI_FAIL,
+      });
     }
-  });
-
-  pm.message(["FIXME"], async ({ payload }) => {
-    if (payload.subtype || !payload.text) return;
-
-    const { channel, text, ts: timestamp } = payload;
-    const m = text.match(/^\s*(\S+(?:\s\S+)*)\s?(\+\+|--|—)\s*$/);
-    if (!(m && m[1] && m[2])) return;
-
-    const result = await bumpKarma(m[1], m[2] as KarmaChange);
-    await pm.app.client.reactions.add({
-      channel,
-      timestamp,
-      name: result.ok ? EMOJI_OK : EMOJI_FAIL,
-    });
-  });
+  );
 };
 
 export default init;

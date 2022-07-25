@@ -84,7 +84,8 @@ export const initializePlugins = (app: App) => {
     .use(Eightball)
     .use(Karma)
     .use(Ryecock)
-    .use(Splain);
+    .use(Splain)
+  ;
 
   pm.command(
     "ping",
@@ -110,7 +111,7 @@ export const initializePlugins = (app: App) => {
   );
 
   pm.message(
-    ["displays the current day of the week"],
+    ["`today` will display the current day of the week"],
     async ({ payload, say }) => {
       if (payload.subtype !== undefined) return;
 

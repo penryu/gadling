@@ -1,0 +1,17 @@
+-- migrate:up
+
+CREATE EXTENSION IF NOT EXISTS CITEXT;
+
+CREATE TABLE karma (
+  id INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+  thing CITEXT NOT NULL UNIQUE,
+  value INT NOT NULL DEFAULT 0
+);
+
+INSERT INTO karma (thing, value) VALUES
+  ('hob', 1337),
+  ('wesolows', -5000000);
+
+-- migrate:down
+
+DROP TABLE IF EXISTS karma;

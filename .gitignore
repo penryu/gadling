@@ -1,5 +1,4 @@
 .env
-dist
-node_modules
 /build/
 Session.vim
+node_modules

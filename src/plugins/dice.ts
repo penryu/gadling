@@ -87,7 +87,7 @@ export const Dice: PluginInit = (pm) => {
   });
 
   pm.message(
-    ["parses all messages for potential dice rolls"],
+    ["Mention a D&D-style dice roll (e.g., `2d6`, `3d8`) to see the outcome"],
     async ({ payload, say }) => {
       if (payload.subtype || !payload.text) return;
 
