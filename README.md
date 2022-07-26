@@ -23,9 +23,14 @@ Plugins can be disabled by commenting out their inclusion in the [plugins/index]
 ```bash
 # First run, and after updates...
 $ yarn install
-$ yarn build
-$ yarn start
+
+# Run test suite (needs work)
+$ yarn test
+
+# Development use
+$ yarn dev
 
 # Between updates/changes...
+$ yarn build
 $ yarn start
 ```
