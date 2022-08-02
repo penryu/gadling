@@ -1,5 +1,6 @@
 import { App } from '@slack/bolt';
 import os from 'os';
+import { env } from 'process';
 
 import log from '../log';
 import {
@@ -99,9 +100,10 @@ export const initializePlugins = (app: App) => {
       const platform = os.platform();
       const release = os.release();
       const opsys = `${platform} ${release}`;
+      const version = env.npm_package_version ?? 'unknown';
 
       const response = [
-        `Comin' at ya from \`${hostname}\`,`,
+        `hob (gadling v${version}) comin' at ya from \`${hostname}\`,`,
         `an \`${cpuArch}\` machine`,
         `with *${cpuCount}x* \`${cpuModel}\` processors`,
         `running \`${opsys}\``,

@@ -28,6 +28,31 @@ SET default_tablespace = '';
 SET default_table_access_method = heap;
 
 --
+-- Name: almanac; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.almanac (
+    id integer NOT NULL,
+    recipient text NOT NULL,
+    served_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
+--
+-- Name: almanac_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+ALTER TABLE public.almanac ALTER COLUMN id ADD GENERATED ALWAYS AS IDENTITY (
+    SEQUENCE NAME public.almanac_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1
+);
+
+
+--
 -- Name: facts; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -88,6 +113,22 @@ CREATE TABLE public.schema_migrations (
 
 
 --
+-- Name: almanac almanac_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.almanac
+    ADD CONSTRAINT almanac_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: almanac almanac_recipient_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.almanac
+    ADD CONSTRAINT almanac_recipient_key UNIQUE (recipient);
+
+
+--
 -- Name: facts facts_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -128,6 +169,13 @@ ALTER TABLE ONLY public.schema_migrations
 
 
 --
+-- Name: idx_almanac_served_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_almanac_served_at ON public.almanac USING btree (served_at DESC);
+
+
+--
 -- PostgreSQL database dump complete
 --
 
@@ -138,4 +186,5 @@ ALTER TABLE ONLY public.schema_migrations
 
 INSERT INTO public.schema_migrations (version) VALUES
     ('20220725040051'),
-    ('20220725040057');
+    ('20220725040057'),
+    ('20220802045648');

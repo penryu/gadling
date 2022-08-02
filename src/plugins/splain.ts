@@ -327,11 +327,11 @@ export const init: PluginInit = (pm) => {
 
       if (thing.length <= 42) {
         const result = await learn(thing, fact);
-        if (result.ok) {
+        if (!result.ok) {
           await pm.app.client.reactions.add({
             channel,
             timestamp,
-            name: result.ok ? EMOJI_OK : EMOJI_FAIL,
+            name: EMOJI_FAIL,
           });
         }
       }

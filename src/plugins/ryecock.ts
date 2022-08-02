@@ -1,8 +1,24 @@
 import { App } from '@slack/bolt';
+import * as db from 'zapatos/db';
+import type * as s from 'zapatos/schema';
 
+import { getPool } from '../db';
 import log from '../log';
 import { articleFor, normalizeUserId, selectFrom } from '../util';
 import { PluginInit, PluginManager } from './index';
+
+enum Duration {
+  SECOND = 1000, // in milliseconds
+  MINUTE = 60 * Duration.SECOND,
+  HOUR = 60 * Duration.MINUTE,
+  DAY = 24 * Duration.HOUR,
+}
+
+// Time between polls for next flood
+const FLOOD_POLL_INTERVAL = 10 * Duration.MINUTE;
+
+// Minimum time to next flood
+const FLOOD_INTERVAL = 3 * Duration.DAY;
 
 export class Ryecock {
   /**
@@ -171,19 +187,28 @@ export class Ryecock {
   /**
    * Periodically floods all members of the given channel
    * @param channelName - name of the channel to flood at intervals
-   * @param delay - minimum time (in hours) to wait between floods
-   * @param span - maximum period of time (in hours) before next flood
    */
-  async autoFlood(channelName: string, delay = 72, span = 18) {
-    const hour = 3600000;
-    const randomTimeout = () => delay * hour + Math.random() * (span * hour);
+  async autoFlood(channelName: string) {
+    log.info(`Setting ${channelName} to auto-flood!`);
 
     // fetch channel list
     const { channels } = await this.app.client.conversations.list();
     // find channel id by name
     const chan_id = channels?.find((ch) => ch.name === channelName)?.id;
 
-    if (!chan_id) return;
+    if (!chan_id) {
+      log.error(`Channel ${channelName} doesn't exist to flood! Aborting...`);
+      return;
+    }
+
+    await db.sql<s.almanac.SQL, s.almanac.Insertable>`
+      INSERT INTO ${'almanac'} (${'recipient'})
+        VALUES (${db.param(chan_id)})
+      ON CONFLICT (${'recipient'}) DO NOTHING
+    `.run(getPool());
+
+    const randomTimeout = () =>
+      FLOOD_POLL_INTERVAL + Math.random() * Duration.MINUTE;
 
     const callback = () => {
       this.floodChannel(chan_id).finally(() =>
@@ -199,7 +224,34 @@ export class Ryecock {
    * @param channel - The channel ID of the channel to flood
    */
   async floodChannel(channel: string) {
-    log.info(`Flooding ${channel} ...`);
+    log.info(`Attempting to flood ${channel} ...`);
+
+    const [record] = await db.sql<s.almanac.SQL, s.almanac.Selectable[]>`
+      SELECT ${'served_at'}
+      FROM ${'almanac'}
+      WHERE ${'recipient'} = ${db.param(channel)}
+    `.run(getPool());
+
+    if (!record) throw new Error(`no record of flooding ${channel}!`);
+    const { served_at: floodTime } = record;
+
+    floodTime.setUTCMilliseconds(
+      floodTime.getUTCMilliseconds() + FLOOD_INTERVAL
+    );
+    const now = new Date();
+    if (floodTime > now) {
+      log.info("... flood averted");
+      return;
+    }
+
+    log.warn("... flood incoming!");
+
+    // update flood time in database
+    await db.sql<s.almanac.SQL, s.almanac.Updatable>`
+      UPDATE ${'almanac'}
+      SET served_at = NOW()
+    `.run(getPool());
+
     // destructure api calls
     const { auth, chat, conversations } = this.app.client;
     const { members } = await conversations.members({ channel });
@@ -256,7 +308,7 @@ export const init: PluginInit = (pm) => {
   );
 
   ryecock.autoFlood('general').catch((err) => {
-    log.error(`Can't flood channel`, err);
+    log.error("Can't flood channel: %s", err);
   });
 };
 

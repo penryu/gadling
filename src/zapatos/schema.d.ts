@@ -23,6 +23,107 @@ declare module 'zapatos/schema' {
   /* --- tables --- */
 
   /**
+   * **almanac**
+   * - Table in database
+   */
+  export namespace almanac {
+    export type Table = 'almanac';
+    export interface Selectable {
+      /**
+      * **almanac.id**
+      * - `int4` in database
+      * - Generated column
+      */
+    id: number;
+      /**
+      * **almanac.recipient**
+      * - `text` in database
+      * - `NOT NULL`, no default
+      */
+    recipient: string;
+      /**
+      * **almanac.served_at**
+      * - `timestamptz` in database
+      * - `NOT NULL`, default: `now()`
+      */
+    served_at: Date;
+    }
+    export interface JSONSelectable {
+      /**
+      * **almanac.id**
+      * - `int4` in database
+      * - Generated column
+      */
+    id: number;
+      /**
+      * **almanac.recipient**
+      * - `text` in database
+      * - `NOT NULL`, no default
+      */
+    recipient: string;
+      /**
+      * **almanac.served_at**
+      * - `timestamptz` in database
+      * - `NOT NULL`, default: `now()`
+      */
+    served_at: db.TimestampTzString;
+    }
+    export interface Whereable {
+      /**
+      * **almanac.id**
+      * - `int4` in database
+      * - Generated column
+      */
+    id?: number | db.Parameter<number> | db.SQLFragment | db.ParentColumn | db.SQLFragment<any, number | db.Parameter<number> | db.SQLFragment | db.ParentColumn>;
+      /**
+      * **almanac.recipient**
+      * - `text` in database
+      * - `NOT NULL`, no default
+      */
+    recipient?: string | db.Parameter<string> | db.SQLFragment | db.ParentColumn | db.SQLFragment<any, string | db.Parameter<string> | db.SQLFragment | db.ParentColumn>;
+      /**
+      * **almanac.served_at**
+      * - `timestamptz` in database
+      * - `NOT NULL`, default: `now()`
+      */
+    served_at?: (db.TimestampTzString | Date) | db.Parameter<(db.TimestampTzString | Date)> | db.SQLFragment | db.ParentColumn | db.SQLFragment<any, (db.TimestampTzString | Date) | db.Parameter<(db.TimestampTzString | Date)> | db.SQLFragment | db.ParentColumn>;
+    }
+    export interface Insertable {
+      /**
+      * **almanac.recipient**
+      * - `text` in database
+      * - `NOT NULL`, no default
+      */
+    recipient: string | db.Parameter<string> | db.SQLFragment;
+      /**
+      * **almanac.served_at**
+      * - `timestamptz` in database
+      * - `NOT NULL`, default: `now()`
+      */
+    served_at?: (db.TimestampTzString | Date) | db.Parameter<(db.TimestampTzString | Date)> | db.DefaultType | db.SQLFragment;
+    }
+    export interface Updatable {
+      /**
+      * **almanac.recipient**
+      * - `text` in database
+      * - `NOT NULL`, no default
+      */
+    recipient?: string | db.Parameter<string> | db.SQLFragment | db.SQLFragment<any, string | db.Parameter<string> | db.SQLFragment>;
+      /**
+      * **almanac.served_at**
+      * - `timestamptz` in database
+      * - `NOT NULL`, default: `now()`
+      */
+    served_at?: (db.TimestampTzString | Date) | db.Parameter<(db.TimestampTzString | Date)> | db.DefaultType | db.SQLFragment | db.SQLFragment<any, (db.TimestampTzString | Date) | db.Parameter<(db.TimestampTzString | Date)> | db.DefaultType | db.SQLFragment>;
+    }
+    export type UniqueIndex = 'almanac_pkey' | 'almanac_recipient_key';
+    export type Column = keyof Selectable;
+    export type OnlyCols<T extends readonly Column[]> = Pick<Selectable, T[number]>;
+    export type SQLExpression = Table | db.ColumnNames<Updatable | (keyof Updatable)[]> | db.ColumnValues<Updatable> | Whereable | Column | db.ParentColumn | db.GenericSQLExpression;
+    export type SQL = SQLExpression | SQLExpression[];
+  }
+
+  /**
    * **facts**
    * - Table in database
    */
@@ -37,13 +138,13 @@ declare module 'zapatos/schema' {
     id: number;
       /**
       * **facts.thing**
-      * - `text` in database
+      * - `citext` in database
       * - `NOT NULL`, no default
       */
     thing: string;
       /**
       * **facts.fact**
-      * - `text` in database
+      * - `citext` in database
       * - `NOT NULL`, no default
       */
     fact: string;
@@ -63,13 +164,13 @@ declare module 'zapatos/schema' {
     id: number;
       /**
       * **facts.thing**
-      * - `text` in database
+      * - `citext` in database
       * - `NOT NULL`, no default
       */
     thing: string;
       /**
       * **facts.fact**
-      * - `text` in database
+      * - `citext` in database
       * - `NOT NULL`, no default
       */
     fact: string;
@@ -89,13 +190,13 @@ declare module 'zapatos/schema' {
     id?: number | db.Parameter<number> | db.SQLFragment | db.ParentColumn | db.SQLFragment<any, number | db.Parameter<number> | db.SQLFragment | db.ParentColumn>;
       /**
       * **facts.thing**
-      * - `text` in database
+      * - `citext` in database
       * - `NOT NULL`, no default
       */
     thing?: string | db.Parameter<string> | db.SQLFragment | db.ParentColumn | db.SQLFragment<any, string | db.Parameter<string> | db.SQLFragment | db.ParentColumn>;
       /**
       * **facts.fact**
-      * - `text` in database
+      * - `citext` in database
       * - `NOT NULL`, no default
       */
     fact?: string | db.Parameter<string> | db.SQLFragment | db.ParentColumn | db.SQLFragment<any, string | db.Parameter<string> | db.SQLFragment | db.ParentColumn>;
@@ -109,13 +210,13 @@ declare module 'zapatos/schema' {
     export interface Insertable {
       /**
       * **facts.thing**
-      * - `text` in database
+      * - `citext` in database
       * - `NOT NULL`, no default
       */
     thing: string | db.Parameter<string> | db.SQLFragment;
       /**
       * **facts.fact**
-      * - `text` in database
+      * - `citext` in database
       * - `NOT NULL`, no default
       */
     fact: string | db.Parameter<string> | db.SQLFragment;
@@ -129,13 +230,13 @@ declare module 'zapatos/schema' {
     export interface Updatable {
       /**
       * **facts.thing**
-      * - `text` in database
+      * - `citext` in database
       * - `NOT NULL`, no default
       */
     thing?: string | db.Parameter<string> | db.SQLFragment | db.SQLFragment<any, string | db.Parameter<string> | db.SQLFragment>;
       /**
       * **facts.fact**
-      * - `text` in database
+      * - `citext` in database
       * - `NOT NULL`, no default
       */
     fact?: string | db.Parameter<string> | db.SQLFragment | db.SQLFragment<any, string | db.Parameter<string> | db.SQLFragment>;
@@ -168,7 +269,7 @@ declare module 'zapatos/schema' {
     id: number;
       /**
       * **karma.thing**
-      * - `text` in database
+      * - `citext` in database
       * - `NOT NULL`, no default
       */
     thing: string;
@@ -188,7 +289,7 @@ declare module 'zapatos/schema' {
     id: number;
       /**
       * **karma.thing**
-      * - `text` in database
+      * - `citext` in database
       * - `NOT NULL`, no default
       */
     thing: string;
@@ -208,7 +309,7 @@ declare module 'zapatos/schema' {
     id?: number | db.Parameter<number> | db.SQLFragment | db.ParentColumn | db.SQLFragment<any, number | db.Parameter<number> | db.SQLFragment | db.ParentColumn>;
       /**
       * **karma.thing**
-      * - `text` in database
+      * - `citext` in database
       * - `NOT NULL`, no default
       */
     thing?: string | db.Parameter<string> | db.SQLFragment | db.ParentColumn | db.SQLFragment<any, string | db.Parameter<string> | db.SQLFragment | db.ParentColumn>;
@@ -222,7 +323,7 @@ declare module 'zapatos/schema' {
     export interface Insertable {
       /**
       * **karma.thing**
-      * - `text` in database
+      * - `citext` in database
       * - `NOT NULL`, no default
       */
     thing: string | db.Parameter<string> | db.SQLFragment;
@@ -236,7 +337,7 @@ declare module 'zapatos/schema' {
     export interface Updatable {
       /**
       * **karma.thing**
-      * - `text` in database
+      * - `citext` in database
       * - `NOT NULL`, no default
       */
     thing?: string | db.Parameter<string> | db.SQLFragment | db.SQLFragment<any, string | db.Parameter<string> | db.SQLFragment>;
@@ -254,23 +355,76 @@ declare module 'zapatos/schema' {
     export type SQL = SQLExpression | SQLExpression[];
   }
 
+  /**
+   * **schema_migrations**
+   * - Table in database
+   */
+  export namespace schema_migrations {
+    export type Table = 'schema_migrations';
+    export interface Selectable {
+      /**
+      * **schema_migrations.version**
+      * - `varchar` in database
+      * - `NOT NULL`, no default
+      */
+    version: string;
+    }
+    export interface JSONSelectable {
+      /**
+      * **schema_migrations.version**
+      * - `varchar` in database
+      * - `NOT NULL`, no default
+      */
+    version: string;
+    }
+    export interface Whereable {
+      /**
+      * **schema_migrations.version**
+      * - `varchar` in database
+      * - `NOT NULL`, no default
+      */
+    version?: string | db.Parameter<string> | db.SQLFragment | db.ParentColumn | db.SQLFragment<any, string | db.Parameter<string> | db.SQLFragment | db.ParentColumn>;
+    }
+    export interface Insertable {
+      /**
+      * **schema_migrations.version**
+      * - `varchar` in database
+      * - `NOT NULL`, no default
+      */
+    version: string | db.Parameter<string> | db.SQLFragment;
+    }
+    export interface Updatable {
+      /**
+      * **schema_migrations.version**
+      * - `varchar` in database
+      * - `NOT NULL`, no default
+      */
+    version?: string | db.Parameter<string> | db.SQLFragment | db.SQLFragment<any, string | db.Parameter<string> | db.SQLFragment>;
+    }
+    export type UniqueIndex = 'schema_migrations_pkey';
+    export type Column = keyof Selectable;
+    export type OnlyCols<T extends readonly Column[]> = Pick<Selectable, T[number]>;
+    export type SQLExpression = Table | db.ColumnNames<Updatable | (keyof Updatable)[]> | db.ColumnValues<Updatable> | Whereable | Column | db.ParentColumn | db.GenericSQLExpression;
+    export type SQL = SQLExpression | SQLExpression[];
+  }
+
   /* --- aggregate types --- */
 
   export namespace public {  
-    export type Table = facts.Table | karma.Table;
-    export type Selectable = facts.Selectable | karma.Selectable;
-    export type JSONSelectable = facts.JSONSelectable | karma.JSONSelectable;
-    export type Whereable = facts.Whereable | karma.Whereable;
-    export type Insertable = facts.Insertable | karma.Insertable;
-    export type Updatable = facts.Updatable | karma.Updatable;
-    export type UniqueIndex = facts.UniqueIndex | karma.UniqueIndex;
-    export type Column = facts.Column | karma.Column;
+    export type Table = almanac.Table | facts.Table | karma.Table | schema_migrations.Table;
+    export type Selectable = almanac.Selectable | facts.Selectable | karma.Selectable | schema_migrations.Selectable;
+    export type JSONSelectable = almanac.JSONSelectable | facts.JSONSelectable | karma.JSONSelectable | schema_migrations.JSONSelectable;
+    export type Whereable = almanac.Whereable | facts.Whereable | karma.Whereable | schema_migrations.Whereable;
+    export type Insertable = almanac.Insertable | facts.Insertable | karma.Insertable | schema_migrations.Insertable;
+    export type Updatable = almanac.Updatable | facts.Updatable | karma.Updatable | schema_migrations.Updatable;
+    export type UniqueIndex = almanac.UniqueIndex | facts.UniqueIndex | karma.UniqueIndex | schema_migrations.UniqueIndex;
+    export type Column = almanac.Column | facts.Column | karma.Column | schema_migrations.Column;
   
-    export type AllBaseTables = [facts.Table, karma.Table];
+    export type AllBaseTables = [almanac.Table, facts.Table, karma.Table, schema_migrations.Table];
     export type AllForeignTables = [];
     export type AllViews = [];
     export type AllMaterializedViews = [];
-    export type AllTablesAndViews = [facts.Table, karma.Table];
+    export type AllTablesAndViews = [almanac.Table, facts.Table, karma.Table, schema_migrations.Table];
   }
 
 
@@ -298,43 +452,59 @@ declare module 'zapatos/schema' {
   /* === lookups === */
 
   export type SelectableForTable<T extends Table> = {
+    "almanac": almanac.Selectable;
     "facts": facts.Selectable;
     "karma": karma.Selectable;
+    "schema_migrations": schema_migrations.Selectable;
   }[T];
 
   export type JSONSelectableForTable<T extends Table> = {
+    "almanac": almanac.JSONSelectable;
     "facts": facts.JSONSelectable;
     "karma": karma.JSONSelectable;
+    "schema_migrations": schema_migrations.JSONSelectable;
   }[T];
 
   export type WhereableForTable<T extends Table> = {
+    "almanac": almanac.Whereable;
     "facts": facts.Whereable;
     "karma": karma.Whereable;
+    "schema_migrations": schema_migrations.Whereable;
   }[T];
 
   export type InsertableForTable<T extends Table> = {
+    "almanac": almanac.Insertable;
     "facts": facts.Insertable;
     "karma": karma.Insertable;
+    "schema_migrations": schema_migrations.Insertable;
   }[T];
 
   export type UpdatableForTable<T extends Table> = {
+    "almanac": almanac.Updatable;
     "facts": facts.Updatable;
     "karma": karma.Updatable;
+    "schema_migrations": schema_migrations.Updatable;
   }[T];
 
   export type UniqueIndexForTable<T extends Table> = {
+    "almanac": almanac.UniqueIndex;
     "facts": facts.UniqueIndex;
     "karma": karma.UniqueIndex;
+    "schema_migrations": schema_migrations.UniqueIndex;
   }[T];
 
   export type ColumnForTable<T extends Table> = {
+    "almanac": almanac.Column;
     "facts": facts.Column;
     "karma": karma.Column;
+    "schema_migrations": schema_migrations.Column;
   }[T];
 
   export type SQLForTable<T extends Table> = {
+    "almanac": almanac.SQL;
     "facts": facts.SQL;
     "karma": karma.SQL;
+    "schema_migrations": schema_migrations.SQL;
   }[T];
 
 }
