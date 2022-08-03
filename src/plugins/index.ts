@@ -1,8 +1,8 @@
 import { App } from '@slack/bolt';
 import os from 'os';
-import { env } from 'process';
 
 import log from '../log';
+import { packageJson } from '../metadata';
 import {
   CommandListener,
   MessageListener,
@@ -100,14 +100,15 @@ export const initializePlugins = (app: App) => {
       const platform = os.platform();
       const release = os.release();
       const opsys = `${platform} ${release}`;
-      const version = env.npm_package_version ?? 'unknown';
+      const { homepage, version }= packageJson;
 
       const response = [
-        `hob (gadling v${version}) comin' at ya from \`${hostname}\`,`,
+        `hob (gadling ${version}; ${homepage}) comin' at ya from \`${hostname}\`,`,
         `an \`${cpuArch}\` machine`,
-        `with *${cpuCount}x* \`${cpuModel}\` processors`,
+        `with *${cpuCount}x* \`${cpuModel}\` cores`,
         `running \`${opsys}\``,
       ];
+
       await say(response.join(' '));
     }
   );

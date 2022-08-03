@@ -10,6 +10,6 @@ RUN yarn build
 FROM node:alpine
 WORKDIR /app
 COPY --from=hpnc /usr/local/cargo/bin/hpnc /usr/local/bin
-COPY --from=builder /work/build /work/package.json /work/yarn.lock ./
+COPY --from=builder /work .
 RUN yarn install --frozen-lockfile --production
-CMD ["node", "index.js"]
+CMD ["node", "build/index.js"]
