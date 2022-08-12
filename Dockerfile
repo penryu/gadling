@@ -1,5 +1,5 @@
 FROM rust:alpine AS hpnc
-RUN cargo install hpn-client
+RUN cargo install hpnc
 
 FROM node:alpine AS builder
 WORKDIR /work
