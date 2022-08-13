@@ -19,13 +19,10 @@ export const info = log.info;
 export const warn = log.warn;
 export const error = log.error;
 
-class SlackLogger implements Logger {
-  // slackLevel: LogLevel;
-
-  // constructor() {
-  //   this.slackLevel = this.getLevel();
-  // }
-
+/**
+ * Adapter class that tells Slack
+ */
+export class SlackLogger implements Logger {
   debug = (args: unknown[]): void => log.debug(args);
   info  = (args: unknown[]): void => log.info(args);
   warn  = (args: unknown[]): void => log.warn(args);
@@ -44,7 +41,5 @@ class SlackLogger implements Logger {
     log.info(`Ignoring attempt to change logger name to ${name}`);
   }
 }
-
-export const slackLogger = new SlackLogger();
 
 export default log;

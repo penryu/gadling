@@ -71,15 +71,13 @@ describe('parseBangCommand', () => {
 
   const baseBangCommand: Omit<BangCommand, 'command' | 'rest' | 'text'> = {
     channel: baseBangPayload.channel,
+    payload: baseBangPayload,
     timestamp: baseBangPayload.ts,
     user: baseBangPayload.user,
   } as const;
 
   it("returns None for invalid command", () => {
-    const payload = {
-      ...baseBangPayload,
-      text: "not a bang command",
-    };
+    const payload = { ...baseBangPayload };
     expect(parseBangCommand(payload)).toEqual(None);
   });
 
@@ -90,6 +88,7 @@ describe('parseBangCommand', () => {
       Some({
         ...baseBangCommand,
         command: "pass",
+        payload: { ...baseBangPayload, text },
         rest: None,
         text,
       })
@@ -103,6 +102,7 @@ describe('parseBangCommand', () => {
       Some({
         ...baseBangCommand,
         command: "pass",
+        payload: { ...baseBangPayload, text },
         rest: Some("the salt"),
         text,
       })

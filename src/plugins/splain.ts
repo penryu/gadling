@@ -5,6 +5,7 @@ import { EMOJI_FAIL, EMOJI_OK } from '../constants';
 import { getPool } from '../db';
 import log from '../log';
 import { Err, None, Ok, Option, Result, Some } from '../types';
+import { selectFrom } from '../util';
 
 import { PluginInit } from './index';
 
@@ -281,6 +282,28 @@ export const init: PluginInit = (pm) => {
           ? `${thing} == ${fact.value}`
           : `I can't find anything for \`${thing}\``
       );
+    }
+  );
+
+  pm.message(
+    ["I'll randomly botsplain things for you"],
+    async ({ payload, say }) => {
+      if (payload.subtype || !payload.text) return;
+
+      const { text } = payload;
+      if (text.length <= 5 || text.length > 42) return;
+
+      const result = await db.sql<s.facts.SQL, s.facts.Selectable[]>`
+        SELECT ${'thing'}, ${'fact'}
+        FROM ${'facts'}
+        WHERE ${'fact'} ILIKE ${db.param(`%${text}%`)}
+          OR ${'thing'} ILIKE ${db.param(`%${text}%`)}
+      `.run(getPool());
+
+      if (result.length > 0) {
+        const { thing, fact } = selectFrom(result);
+        await say(`I heard ${thing} was ${fact}`);
+      }
     }
   );
 

@@ -34,10 +34,7 @@ export const Eightball: PluginInit = (pm) => {
     async ({ rest: question, user }, { say }) => {
       if (question.some) {
         const answer = selectFrom(Answers);
-        const response = answer.some
-          ? `*${question.value}*: \`${answer.value}\``
-          : "Please call the plumber, I'm fresh out of predictions.";
-        await say(response);
+        await say(`*${question.value}*: \`${answer}\``);
         return;
       }
 

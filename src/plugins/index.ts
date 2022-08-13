@@ -7,7 +7,7 @@ import {
   CommandListener,
   MessageListener,
 } from "../types";
-import { parseBangCommand, sleep } from '../util';
+import { normalizeUserId, parseBangCommand, selectFrom, sleep } from '../util';
 
 import Calc from './calc';
 import Dice from './dice';
@@ -92,6 +92,7 @@ export const initializePlugins = (app: App) => {
     "ping",
     ["displays some info about the bot"],
     async (_, { say }) => {
+      const { user: my_name } = await pm.app.client.auth.test();
       const cpus = os.cpus();
       const cpuModel = cpus[0]?.model ?? 'unknown CPU model';
       const cpuCount = cpus.length;
@@ -103,7 +104,7 @@ export const initializePlugins = (app: App) => {
       const { homepage, version }= packageJson;
 
       const response = [
-        `hob (gadling ${version}; ${homepage}) comin' at ya from \`${hostname}\`,`,
+        `${my_name ?? 'anonymous'} (gadling ${version}; ${homepage}) comin' at ya from \`${hostname}\`,`,
         `an \`${cpuArch}\` machine`,
         `with *${cpuCount}x* \`${cpuModel}\` cores`,
         `running \`${opsys}\``,
@@ -113,6 +114,44 @@ export const initializePlugins = (app: App) => {
     }
   );
 
+  pm.message(
+    ["I try to be polite"],
+    async ({ payload, say }) => {
+      if (payload.subtype !== undefined) return;
+
+      const { text, user } = payload;
+      if (!text) return;
+
+      const user_tag = normalizeUserId(user);
+
+      if (text.match(/\b(hello|hi)\b/i)) {
+        const message = selectFrom(["greetings", "hello", "hey", "hi"]);
+        await say(`${message} ${user_tag}`);
+        return;
+      }
+
+      if (text.match(/\b(bye|so long|ttfn)\b/i)) {
+        const message = selectFrom([
+          "bye",
+          "goodbye",
+          "so long",
+          "see ya",
+          "sayonara",
+        ]);
+        await say(`${message} ${user_tag}!`);
+        return;
+      }
+
+      if (text.match(/\b(thanks|ty|cheers)\b/i)) {
+        await say(selectFrom([
+          `don't mention it, ${user_tag}`,
+          "no problem!",
+          "you're welcome!",
+        ]));
+        return;
+      }
+    }
+  );
   pm.message(
     ["`today` will display the current day of the week"],
     async ({ payload, say }) => {

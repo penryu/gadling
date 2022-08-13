@@ -43,14 +43,9 @@ export async function parseJson<T>(str: string): Promise<Option<T>> {
   }
 }
 
-export function selectFrom<T>(xs: Array<T> | undefined | null): Option<T> {
-  if (xs && xs.length > 0) {
-    const idx = Math.floor(Math.random() * xs.length);
-    const selection = xs[idx];
-    if (selection != undefined) return Some(selection);
-  }
-
-  return None;
+export function selectFrom<T>(xs: Array<T>): T {
+  const idx = Math.floor(Math.random() * xs.length);
+  return xs[idx] as T;
 }
 
 export const sleep = async (ms: number) =>

@@ -65,11 +65,11 @@ export const init: PluginInit = (pm) => {
       const thing = rest.value;
 
       const karma = await karmaFor(thing.trim());
-      if (karma.ok && karma.value !== 0) {
-        await say(`${thing} has karma ${karma.value}`);
-      } else {
-        await say(`${thing} has neutral karma`);
-      }
+      await say(
+        karma.ok && karma.value !== 0
+          ? `${thing} has karma ${karma.value}`
+          : `${thing} has neutral karma`
+      );
     }
   );
 
