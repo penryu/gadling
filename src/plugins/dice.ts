@@ -1,8 +1,8 @@
-import { log } from '../log';
-import { None, Option, Some } from '../types';
-import { PluginInit } from './index';
+import { log } from "../log";
+import { None, Option, Some } from "../types";
+import { PluginInit } from "./index";
 
-type DiceSpec = { count: number, faces: number, spec: string };
+type DiceSpec = { count: number; faces: number; spec: string };
 
 const MAX_COUNT = 100;
 const MAX_FACES = 100;
@@ -37,7 +37,7 @@ const parseDice = (text: string): Option<DiceSpec> => {
   }
 
   return None;
-}
+};
 
 function roll(text: string): Option<string> {
   const opt_dice = parseDice(text);

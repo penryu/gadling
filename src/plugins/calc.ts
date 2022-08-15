@@ -1,9 +1,9 @@
-import childproc from 'child_process';
-import { env as ENV } from 'process';
-import { promisify } from 'util';
+import childproc from "child_process";
+import { env as ENV } from "process";
+import { promisify } from "util";
 
-import { log } from '../log';
-import { PluginInit } from './index';
+import { log } from "../log";
+import { PluginInit } from "./index";
 
 const execFile = promisify(childproc.execFile);
 
@@ -18,13 +18,13 @@ const HELP = {
 
 export const Calc: PluginInit = (pm) => {
   pm.command("calc", [HELP.calc], async ({ rest }, { say }) => {
-    const calcBin = ENV['HOB_CALC'] || 'hpnc';
+    const calcBin = ENV["HOB_CALC"] || "hpnc";
 
     if (rest.some) {
       try {
         const { stderr, stdout } = await execFile(calcBin, [rest.value]);
         log.warn("%s stderr: %s", calcBin, stderr);
-        await say('```' + stdout + '```');
+        await say("```" + stdout + "```");
       } catch (e) {
         log.error("%s: %s", __filename, e);
         await say(`My calculator (\`${calcBin}\`) is borken!`);
