@@ -1,7 +1,8 @@
+import { SayFn } from '@slack/bolt';
 import * as db from 'zapatos/db';
 import type * as s from 'zapatos/schema';
 
-import { EMOJI_FAIL, EMOJI_OK } from '../constants';
+import { Emoji } from '../constants';
 import { getPool } from '../db';
 import log from '../log';
 import { Err, None, Ok, Option, Result, Some } from '../types';
@@ -28,13 +29,13 @@ export async function dump(): Promise<Result<Array<FactRecord>>> {
 
   try {
     const rows = await db.sql<s.facts.SQL, s.facts.Selectable[]>`
-      SELECT ${"thing"}, ${"fact"}, ${"inactive"} FROM ${"facts"}
-      ORDER BY ${"thing"}, ${"fact"}, ${"inactive"} LIMIT 500
+      SELECT ${'thing'}, ${'fact'}, ${'inactive'} FROM ${'facts'}
+      ORDER BY ${'thing'}, ${'fact'}, ${'inactive'} LIMIT 500
     `.run(getPool());
     return Ok(rows);
   } catch (e: unknown) {
-    log.error("Failed to collect factdump: %s", e);
-    return Err(e instanceof Error || typeof e === "string" ? e : String(e));
+    log.error('Failed to collect factdump: %s', e);
+    return Err(e instanceof Error || typeof e === 'string' ? e : String(e));
   }
 }
 
@@ -50,8 +51,8 @@ export async function forget(
     `.run(getPool());
     return Ok(changes.length);
   } catch (e: unknown) {
-    log.error("Failed to delete [%s == %s]: %s", thing, fact, e);
-    return Err(e instanceof Error || typeof e === "string" ? e : String(e));
+    log.error('Failed to delete [%s == %s]: %s', thing, fact, e);
+    return Err(e instanceof Error || typeof e === 'string' ? e : String(e));
   }
 }
 
@@ -60,12 +61,12 @@ export async function forgetAll(thing: string): Promise<Result<number>> {
 
   try {
     const changes = await db.sql`
-      UPDATE facts SET ${"inactive"} = TRUE WHERE ${{ thing }}
+      UPDATE facts SET ${'inactive'} = TRUE WHERE ${{ thing }}
     `.run(getPool());
     return Ok(changes.length);
   } catch (e: unknown) {
-    log.error("Failed to delete facts for %s: %s", thing, e);
-    return Err(e instanceof Error || typeof e === "string" ? e : String(e));
+    log.error('Failed to delete facts for %s: %s', thing, e);
+    return Err(e instanceof Error || typeof e === 'string' ? e : String(e));
   }
 }
 
@@ -75,15 +76,15 @@ async function learn(thing: string, fact: string): Promise<Result<number>> {
   try {
     const record = { thing, fact };
     await db.sql`
-      INSERT INTO ${"facts"} (${db.cols(record)})
+      INSERT INTO ${'facts'} (${db.cols(record)})
         VALUES (${db.vals(record)})
       ON CONFLICT (${db.cols(record)}) DO
-        UPDATE SET ${"inactive"} = FALSE
+        UPDATE SET ${'inactive'} = FALSE
     `.run(getPool());
     return Ok(0);
   } catch (e: unknown) {
-    log.error("Failed to insert %s == %s: %s", thing, fact, e);
-    return Err(e instanceof Error || typeof e === "string" ? e : String(e));
+    log.error('Failed to insert %s == %s: %s', thing, fact, e);
+    return Err(e instanceof Error || typeof e === 'string' ? e : String(e));
   }
 }
 
@@ -92,42 +93,42 @@ async function lookup(thing: string): Promise<Result<Array<string>>> {
 
   try {
     const records = await db.sql<s.facts.SQL, s.facts.Selectable[]>`
-      SELECT ${"fact"} FROM ${"facts"}
+      SELECT ${'fact'} FROM ${'facts'}
       WHERE ${{ thing, inactive: false }}
-      ORDER BY ${"fact"} LIMIT 100
+      ORDER BY ${'fact'} LIMIT 100
     `.run(getPool());
     return records.length > 0
       ? Ok(records.map((r) => r.fact))
-      : Err("no matching facts");
+      : Err('no matching facts');
   } catch (e: unknown) {
-    log.error("Failed to lookup %s: %s", thing, e);
-    return Err(e instanceof Error || typeof e === "string" ? e : String(e));
+    log.error('Failed to lookup %s: %s', thing, e);
+    return Err(e instanceof Error || typeof e === 'string' ? e : String(e));
   }
 }
 
-async function search(term: string): Promise<Result<Array<Record<string, string>>>> {
-  if (term.length < 3) return Err("query too short");
+async function search(
+  term: string
+): Promise<Result<Array<Record<string, string>>>> {
+  if (term.length < 3) return Err('query too short');
   log.debug(`search: ${term}`);
 
   try {
     const sqlTerm = `%${term}%`;
-    const records = await db.sql<
-      s.facts.SQL,
-      s.facts.Selectable[]>`
-        SELECT ${"thing"}, ${"fact"} FROM ${"facts"}
+    const records = await db.sql<s.facts.SQL, s.facts.Selectable[]>`
+        SELECT ${'thing'}, ${'fact'} FROM ${'facts'}
         WHERE (
-          ${"thing"} ILIKE ${db.param(sqlTerm)} OR
-          ${"fact"} ILIKE ${db.param(sqlTerm)}
-        ) AND ${"inactive"} = FALSE
-        ORDER BY ${"thing"}, ${"fact"}
+          ${'thing'} ILIKE ${db.param(sqlTerm)} OR
+          ${'fact'} ILIKE ${db.param(sqlTerm)}
+        ) AND ${'inactive'} = FALSE
+        ORDER BY ${'thing'}, ${'fact'}
         LIMIT 100
     `.run(getPool());
     return records?.length > 0
       ? Ok(records.map(({ thing, fact }) => ({ [thing]: fact })))
       : Err(`No facts for ${term}`);
   } catch (e: unknown) {
-    log.error("Failed to lookup %s: %s", term, e);
-    return Err(e instanceof Error || typeof e === "string" ? e : String(e));
+    log.error('Failed to lookup %s: %s', term, e);
+    return Err(e instanceof Error || typeof e === 'string' ? e : String(e));
   }
 }
 
@@ -144,76 +145,107 @@ async function selectRandomByThing(thing: string): Promise<Option<string>> {
 }
 
 export const init: PluginInit = (pm) => {
+  const makeReply =
+    ({
+      channel,
+      say,
+      timestamp,
+    }: {
+      channel: string;
+      say: SayFn;
+      timestamp: string;
+    }) =>
+    async (emoji: Emoji, message?: string) => {
+      await pm.app.client.reactions.add({ channel, timestamp, name: emoji });
+      if (message) await say(message);
+    };
+
   pm.command(
-    "forget",
-    ["Forget a fact", "`!forget pluto := a planet`"],
+    'forget',
+    {
+      section: 'splainer',
+      command: '!forget THING := FACT',
+      description: 'Forget a fact',
+      examples: ['`!forget pluto := a planet`'],
+    },
     async ({ channel, rest, timestamp }, { say }) => {
       if (!rest.some) return;
 
-      const [thing, fact] = rest.value.split(":=", 2).map((s) => s.trim());
+      const replyWith = makeReply({ channel, say, timestamp });
+
+      const [thing, fact] = rest.value.split(':=', 2).map((s) => s.trim());
       if (!(thing && fact)) {
-        await say("Usage: `!forget THING := FACT`");
+        await say('Usage: `!forget THING := FACT`');
         return;
       }
 
       const result = await forget(thing, fact);
-      await pm.app.client.reactions.add({
-        channel,
-        timestamp,
-        name: result.ok ? EMOJI_OK : EMOJI_FAIL,
-      });
+      await replyWith(result.ok ? Emoji.OK : Emoji.FAIL);
     }
   );
 
   pm.command(
-    "forget*",
-    ["Forget everything about a thing", "`!forget* the 2016 election`"],
+    'forget*',
+    {
+      section: 'splainer',
+      command: '!forget* THING',
+      description: 'Forget everything about a thing',
+      examples: ['`!forget* the 2016 election`'],
+    },
     async ({ channel, rest: thing, timestamp }, { say }) => {
+      const replyWith = makeReply({ channel, say, timestamp });
+
       if (!thing) {
-        await say("Usage: `!forget* THING`");
+        await replyWith(Emoji.FAIL, 'Usage: `!forget* THING`');
         return;
       }
 
       if (!thing.some) return;
 
       const result = await forgetAll(thing.value);
-      await pm.app.client.reactions.add({
-        channel,
-        timestamp,
-        name: result.ok ? EMOJI_OK : EMOJI_FAIL,
-      });
+      await replyWith(result.ok ? Emoji.OK : Emoji.FAIL);
     }
   );
 
   pm.command(
-    "learn",
-    ["Learn a fact", "`!learn Ontario := a province`"],
+    'learn',
+    {
+      section: 'splainer',
+      command: '!learn THING := FACT',
+      description: 'Learn a fact',
+      examples: ['`!learn Ontario := a province`'],
+    },
     async ({ channel, rest: expr, text, timestamp }, { say }) => {
       if (!expr.some) return;
 
-      const [thing, fact] = expr.value.split(":=", 2).map((s) => s.trim());
+      const replyWith = makeReply({ channel, say, timestamp });
+
+      const [thing, fact] = expr.value.split(':=', 2).map((s) => s.trim());
       if (!(thing && fact)) {
-        await say("Usage: `!learn THING := FACT`");
+        await replyWith(Emoji.FAIL, 'Usage: `!learn THING := FACT`');
         return;
       }
 
       const result = await learn(thing, fact);
       if (!result.ok) log.error(`Failed to learn: ${text}`, result.error);
 
-      await pm.app.client.reactions.add({
-        channel,
-        timestamp,
-        name: result.ok ? EMOJI_OK : EMOJI_FAIL,
-      });
+      await replyWith(result.ok ? Emoji.OK : Emoji.FAIL);
     }
   );
 
   pm.command(
-    "lookup",
-    ["Look-up all facts about a thing", "`!lookup at the sky`"],
-    async ({ channel, rest: thing }, { say }) => {
+    'lookup',
+    {
+      section: 'splainer',
+      command: '!lookup THING',
+      description: 'Look-up all facts about a thing',
+      examples: ['`!lookup at the sky`'],
+    },
+    async ({ channel, rest: thing, timestamp }, { say }) => {
+      const replyWith = makeReply({ channel, say, timestamp });
+
       if (!thing.some) {
-        await say("Usage: `!lookup THING`");
+        await replyWith(Emoji.FAIL, 'Usage: `!lookup THING`');
         return;
       }
 
@@ -222,21 +254,31 @@ export const init: PluginInit = (pm) => {
         await pm.app.client.files.upload({
           channels: channel,
           content: JSON.stringify(results.value, null, 2),
-          filetype: "javascript",
+          filetype: 'javascript',
           title: thing.value,
         });
       } else {
-        await say(`I don't have anything for \`${thing.value}\``);
+        await replyWith(
+          Emoji.WRONG,
+          `I don't have anything for \`${thing.value}\``
+        );
       }
     }
   );
 
   pm.command(
-    "search",
-    ["Search all knowledge for a term/substring", "`!search high and low`"],
-    async ({ channel, payload, rest: thing }, { say }) => {
+    'search',
+    {
+      section: 'splainer',
+      command: '!search TERM',
+      description: 'Search all knowledge for a term/substring',
+      examples: ['`!search high and low`'],
+    },
+    async ({ channel, payload, rest: thing, timestamp }, { say }) => {
+      const replyWith = makeReply({ channel, say, timestamp });
+
       if (!thing.some) {
-        await say("Usage: `!search WORD`");
+        await replyWith(Emoji.FAIL, 'Usage: `!search WORD`');
         return;
       }
 
@@ -252,23 +294,29 @@ export const init: PluginInit = (pm) => {
               null,
               2
             ),
-            filetype: "javascript",
+            filetype: 'javascript',
             ts,
             title: searchTerm,
           });
         } catch (e) {
-          log.error("Failed to search for [%s]: %s", searchTerm, e);
+          log.error('Failed to search for [%s]: %s', searchTerm, e);
         }
       } else {
-        await say(
-          `I don't have anything for \`${thing.value}\`: \`${results.error.message}\``
+        const { message } = results.error;
+        await replyWith(
+          Emoji.WRONG,
+          `I don't have anything for \`${searchTerm}\`: \`${message}\``
         );
       }
     }
   );
 
   pm.message(
-    ["`?THING`: fetch a random fact about `THING` (if known)"],
+    {
+      section: 'splainer',
+      description: 'fetch a random fact about `THING` (if known)',
+      examples: ['`?THING`'],
+    },
     async ({ payload, say }) => {
       if (payload.subtype || !payload.text) return;
 
@@ -286,7 +334,10 @@ export const init: PluginInit = (pm) => {
   );
 
   pm.message(
-    ["I'll randomly botsplain things for you"],
+    {
+      section: 'splainer',
+      description: "I'll randomly botsplain things for you",
+    },
     async ({ payload, say }) => {
       if (payload.subtype || !payload.text) return;
 
@@ -308,10 +359,14 @@ export const init: PluginInit = (pm) => {
   );
 
   pm.message(
-    [
-      "`what is THING?`: return a fact about `THING`",
-      "`who is PERSON?`: return a fact about `PERSON`",
-    ],
+    {
+      section: 'splainer',
+      description: "I'll spontaneously reply with facts",
+      examples: [
+        '`what is THING?`: return a fact about `THING`',
+        '`who is PERSON?`: return a fact about `PERSON`',
+      ],
+    },
     async ({ payload, say }) => {
       if (payload.subtype || !payload.text) return;
 
@@ -328,14 +383,18 @@ export const init: PluginInit = (pm) => {
   );
 
   pm.message(
-    ["`THING is/are FACT`: Learn a FACT about a THING"],
+    {
+      section: 'splainer',
+      description: "I'll passively learn from the channel(s)",
+      examples: ['`THING is/are FACT`: Learn a FACT about a THING'],
+    },
     async ({ payload }) => {
       if (payload.subtype || !payload.text) return;
 
       const text = payload.text.trim();
       if (
         text.match(/(?:what|who)/i) ||
-        text.includes("?") ||
+        text.includes('?') ||
         text.match(RE_passive_fetch)
       )
         return;
@@ -354,7 +413,7 @@ export const init: PluginInit = (pm) => {
           await pm.app.client.reactions.add({
             channel,
             timestamp,
-            name: EMOJI_FAIL,
+            name: Emoji.FAIL,
           });
         }
       }
@@ -362,8 +421,12 @@ export const init: PluginInit = (pm) => {
   );
 
   pm.command(
-    "dump!",
-    ["Dump entire fact store (max 500 records)", "`!dump!`"],
+    'dump!',
+    {
+      section: 'splainer',
+      command: '!dump!',
+      description: 'Dump entire fact store (max 500 records)',
+    },
     async ({ channel }, { say }) => {
       const results = await dump();
       if (results.ok) {
@@ -378,8 +441,8 @@ export const init: PluginInit = (pm) => {
         await pm.app.client.files.upload({
           channels: channel,
           content: JSON.stringify(data, null, 2),
-          filetype: "javascript",
-          title: "facts",
+          filetype: 'javascript',
+          title: 'facts',
         });
       } else {
         await say(`I didn't find anything! ${results.error.message}`);

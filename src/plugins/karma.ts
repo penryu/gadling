@@ -1,7 +1,7 @@
 import * as db from 'zapatos/db';
 import type * as s from 'zapatos/schema';
 
-import { EMOJI_FAIL, EMOJI_OK } from '../constants';
+import { Emoji } from '../constants';
 import { getPool } from '../db';
 import log from '../log';
 import { Err, Ok, Result } from '../types';
@@ -13,29 +13,32 @@ enum KarmaChange {
   iPhoneSucks = '—',
 }
 
-async function bumpKarma(thing: string, change: KarmaChange): Promise<Result<boolean>> {
+async function bumpKarma(
+  thing: string,
+  change: KarmaChange
+): Promise<Result<boolean>> {
   log.debug(`increment: ${thing}`);
 
   try {
     await db.serializable(getPool(), async (txClient) => {
       const record = { thing, value: 0 };
       await db.sql`
-        INSERT INTO ${"karma"} (${db.cols(record)}) VALUES (${db.vals(record)})
-        ON CONFLICT (${"thing"}) DO NOTHING
+        INSERT INTO ${'karma'} (${db.cols(record)}) VALUES (${db.vals(record)})
+        ON CONFLICT (${'thing'}) DO NOTHING
       `.run(txClient);
 
       const op = change === KarmaChange.Increment ? db.sql`+` : db.sql`-`;
       await db.sql<s.karma.SQL, s.karma.Selectable[]>`
-        UPDATE ${"karma"} SET ${"value"} = ${"value"} ${op} 1
+        UPDATE ${'karma'} SET ${'value'} = ${'value'} ${op} 1
         WHERE ${{ thing }}
-        RETURNING ${"value"}
+        RETURNING ${'value'}
       `.run(txClient);
     });
 
     return Ok(true);
   } catch (e: unknown) {
-    log.error("Failed to update karma %s for %s: %s", change, thing, e);
-    return Err(e instanceof Error || typeof e === "string" ? e : String(e));
+    log.error('Failed to update karma %s for %s: %s', change, thing, e);
+    return Err(e instanceof Error || typeof e === 'string' ? e : String(e));
   }
 }
 
@@ -45,20 +48,24 @@ async function karmaFor(thing: string): Promise<Result<number>> {
   try {
     const row = await db.selectOne('karma', { thing }).run(getPool());
     return row ? Ok(row.value) : Err(`No karma for ${thing}`);
-  }
-  catch (e: unknown) {
-    log.error("Failed to lookup %s: %s", thing, e);
-    return Err((e instanceof Error || typeof e === 'string') ? e : String(e));
+  } catch (e: unknown) {
+    log.error('Failed to lookup %s: %s', thing, e);
+    return Err(e instanceof Error || typeof e === 'string' ? e : String(e));
   }
 }
 
 export const init: PluginInit = (pm) => {
   pm.command(
-    "karma",
-    ["`!karma THING` retrieves the current karma for THING"],
+    'karma',
+    {
+      section: 'karma',
+      command: '!karma THING',
+      description: 'retrieves the current karma for THING',
+      examples: ['`!karma pizza`'],
+    },
     async ({ rest }, { say }) => {
       if (!rest.some) {
-        await say("Usage: `!karma THING`");
+        await say('Usage: `!karma THING`');
         return;
       }
 
@@ -74,7 +81,12 @@ export const init: PluginInit = (pm) => {
   );
 
   pm.message(
-    ["Use `THING++` or `THING--` to adjust change the karma for THING"],
+    {
+      section: 'karma',
+      description:
+        'Use `THING++` or `THING--` to passively adjust change the karma for THING',
+      examples: ['`cardio--`', '`gnocchi++`'],
+    },
     async ({ payload }) => {
       if (payload.subtype || !payload.text) return;
 
@@ -86,7 +98,7 @@ export const init: PluginInit = (pm) => {
       await pm.app.client.reactions.add({
         channel,
         timestamp,
-        name: result.ok ? EMOJI_OK : EMOJI_FAIL,
+        name: result.ok ? Emoji.OK : Emoji.FAIL,
       });
     }
   );

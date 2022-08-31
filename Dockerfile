@@ -9,6 +9,7 @@ RUN yarn build
 
 FROM node:alpine
 WORKDIR /app
+COPY words /usr/share/dict/words
 COPY --from=hpnc /usr/local/cargo/bin/hpnc /usr/local/bin
 COPY --from=builder /work .
 RUN yarn install --frozen-lockfile --production

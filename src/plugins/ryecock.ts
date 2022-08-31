@@ -21,102 +21,102 @@ const FLOOD_POLL_INTERVAL = 10 * Duration.MINUTE;
 const FLOOD_INTERVAL = 3 * Duration.DAY;
 
 const Adjectives: Array<string> = [
-  "animal style",
-  "appreciative",
-  "canadian",
-  "cheetah",
-  "cold",
-  "double",
-  "east coast",
-  "elastic",
-  "emergency",
-  "evening",
-  "frothy",
-  "golden",
-  "late",
-  "late night",
-  "morning",
-  "pink",
-  "power",
-  "quantum",
-  "red",
-  "saturday",
-  "standing",
-  "value",
-  "virtual",
+  'animal style',
+  'appreciative',
+  'canadian',
+  'cheetah',
+  'cold',
+  'double',
+  'east coast',
+  'elastic',
+  'emergency',
+  'evening',
+  'frothy',
+  'golden',
+  'late',
+  'late night',
+  'morning',
+  'pink',
+  'power',
+  'quantum',
+  'red',
+  'saturday',
+  'standing',
+  'value',
+  'virtual',
 ];
 
 const DeliveryDevices: Array<string> = [
-  "amoeba",
-  "animal",
-  "anteater",
-  "bear",
-  "blue whale",
-  "brontosaurus",
-  "bug",
-  "canal",
-  "cat",
-  "chicken",
-  "chinchilla",
-  "coelecanth",
-  "colorado",
-  "dire wolf",
-  "dog",
-  "doge",
-  "donut",
-  "dragon",
-  "elephant",
-  "enchilada",
-  "ferret",
-  "ghost",
-  "godzilla",
-  "hug",
-  "jellyfish",
-  "kangaroo",
-  "mammoth",
-  "monkey",
-  "monster",
-  "moose",
-  "nuke",
-  "opossum",
-  "owl",
-  "pangolin",
-  "penis",
-  "pig",
-  "platypus",
-  "polar bear",
-  "pufferfish",
-  "puma",
-  "saint bernard",
-  "skunk",
-  "snake",
-  "sock",
-  "space reptile",
-  "sperm whale",
-  "sundae",
-  "tapir",
-  "troll",
-  "unicorn",
-  "vat",
-  "walrus",
-  "warthog",
-  "weasel",
-  "whale",
-  "wolf",
-  "wolverine",
+  'amoeba',
+  'animal',
+  'anteater',
+  'bear',
+  'blue whale',
+  'brontosaurus',
+  'bug',
+  'canal',
+  'cat',
+  'chicken',
+  'chinchilla',
+  'coelecanth',
+  'colorado',
+  'dire wolf',
+  'dog',
+  'doge',
+  'donut',
+  'dragon',
+  'elephant',
+  'enchilada',
+  'ferret',
+  'ghost',
+  'godzilla',
+  'hug',
+  'jellyfish',
+  'kangaroo',
+  'mammoth',
+  'monkey',
+  'monster',
+  'moose',
+  'nuke',
+  'opossum',
+  'owl',
+  'pangolin',
+  'penis',
+  'pig',
+  'platypus',
+  'polar bear',
+  'pufferfish',
+  'puma',
+  'saint bernard',
+  'skunk',
+  'snake',
+  'sock',
+  'space reptile',
+  'sperm whale',
+  'sundae',
+  'tapir',
+  'troll',
+  'unicorn',
+  'vat',
+  'walrus',
+  'warthog',
+  'weasel',
+  'whale',
+  'wolf',
+  'wolverine',
 ];
 
 const OneOffs: Array<string> = [
-  "My hobbies include splitting wood and serving mince.",
-  "Tis better to give than receive mince!",
-  "_reads the latest mince-zoological report_",
+  'My hobbies include splitting wood and serving mince.',
+  'Tis better to give than receive mince!',
+  '_reads the latest mince-zoological report_',
 ];
 
 const Sides: Array<string> = [
-  "a coco dongle",
-  "mayo",
-  "muppet sauce",
-  "mustard",
+  'a coco dongle',
+  'mayo',
+  'muppet sauce',
+  'mustard',
 ];
 
 /**
@@ -202,9 +202,9 @@ export class Ryecock {
     log.info(`Attempting to flood ${channel} ...`);
 
     const [record] = await db.sql<s.almanac.SQL, s.almanac.Selectable[]>`
-      SELECT ${"served_at"}
-      FROM ${"almanac"}
-      WHERE ${"recipient"} = ${db.param(channel)}
+      SELECT ${'served_at'}
+      FROM ${'almanac'}
+      WHERE ${'recipient'} = ${db.param(channel)}
     `.run(getPool());
 
     if (record) {
@@ -215,20 +215,20 @@ export class Ryecock {
       );
       const now = new Date();
       if (autoFlood && floodTime > now) {
-        log.info("... flood averted");
+        log.info('... flood averted');
         return;
       }
     } else {
-      log.info("No record of previously flooding %s!", channel);
+      log.info('No record of previously flooding %s!', channel);
     }
 
-    log.warn("... flood incoming!");
+    log.warn('... flood incoming!');
 
     await db.sql<s.almanac.SQL, s.almanac.Updatable>`
-      INSERT INTO ${"almanac"} (${"recipient"})
+      INSERT INTO ${'almanac'} (${'recipient'})
         VALUES (${db.param(channel)})
-      ON CONFLICT (${"recipient"}) DO
-        UPDATE SET ${"served_at"} = NOW()
+      ON CONFLICT (${'recipient'}) DO
+        UPDATE SET ${'served_at'} = NOW()
     `.run(getPool());
 
     // const { chat, conversations, users } = this.app.client;
@@ -252,11 +252,13 @@ export const init: PluginInit = (pm) => {
   const ryecock = new Ryecock(pm);
 
   pm.command(
-    "serve",
-    [
-      "Ensures the recipient receives the US RDA of mince",
-      "`!serve @guest`",
-    ],
+    'serve',
+    {
+      section: 'ryecock',
+      command: '`!serve RECIPIENT`',
+      description: 'Ensures the recipient receives the US RDA of mince',
+      examples: ['`!serve @guest`'],
+    },
     async ({ rest, user }, { say }) => {
       if (!rest.some) return;
 
@@ -267,15 +269,23 @@ export const init: PluginInit = (pm) => {
   );
 
   pm.command(
-    "flood",
-    ["Flood the channel with mince", "`!flood`"],
+    'flood',
+    {
+      section: 'ryecock',
+      command: '`!flood`',
+      description: 'Flood the channel with mince',
+      examples: ['`!flood`'],
+    },
     async ({ channel }) => {
       await ryecock.floodChannel(channel);
     }
   );
 
   pm.message(
-    ["Mention `mince` and ye shall receive"],
+    {
+      section: 'ryecock',
+      description: 'Mention `mince` and ye shall receive',
+    },
     async ({ payload, say }) => {
       if (payload.subtype || !payload.text) return;
 
