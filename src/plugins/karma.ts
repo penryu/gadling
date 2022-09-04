@@ -1,6 +1,5 @@
 import * as db from 'zapatos/db';
 import type * as s from 'zapatos/schema';
-
 import { Emoji } from '../constants';
 import { getPool } from '../db';
 import log from '../log';
@@ -15,7 +14,7 @@ enum KarmaChange {
 
 async function bumpKarma(
   thing: string,
-  change: KarmaChange
+  change: KarmaChange,
 ): Promise<Result<boolean>> {
   log.debug(`increment: ${thing}`);
 
@@ -75,9 +74,9 @@ export const init: PluginInit = (pm) => {
       await say(
         karma.ok && karma.value !== 0
           ? `${thing} has karma ${karma.value}`
-          : `${thing} has neutral karma`
+          : `${thing} has neutral karma`,
       );
-    }
+    },
   );
 
   pm.message(
@@ -100,7 +99,7 @@ export const init: PluginInit = (pm) => {
         timestamp,
         name: result.ok ? Emoji.OK : Emoji.FAIL,
       });
-    }
+    },
   );
 };
 

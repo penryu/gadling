@@ -1,14 +1,13 @@
 #!/usr/bin/env node
+import { App } from '@slack/bolt';
+import { config as dotenvConfig } from 'dotenv';
 import os from 'os';
 import path from 'path';
-import { config as dotenvConfig } from 'dotenv';
-import { App } from '@slack/bolt';
-
 import { getPool } from './db';
 import { log, SlackLogger } from './log';
 import { initializePlugins } from './plugins';
 
-dotenvConfig({ path: path.join(os.homedir(), ".config/hob/env") });
+dotenvConfig({ path: path.join(os.homedir(), '.config/hob/env') });
 
 void (async () => {
   const app = new App({
@@ -26,6 +25,6 @@ void (async () => {
 
   await app.start();
 })().catch((reason) => {
-  log.error("Encountered fatal error: %s", reason);
+  log.error('Encountered fatal error: %s', reason);
   process.exit(7);
 });

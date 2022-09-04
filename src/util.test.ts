@@ -8,33 +8,33 @@ import {
   parseJson,
   selectFrom,
   sleep,
-} from "./util";
+} from './util';
 
 const HOME = '/usr/home/joe';
 
-describe("articleFor", () => {
-  it("adds an a", () => {
+describe('articleFor', () => {
+  it('adds an a', () => {
     const term = 'test';
     expect(articleFor(term)).toBe('a');
   });
 
-  it("adds an an", () => {
+  it('adds an an', () => {
     const term = 'exam';
     expect(articleFor(term)).toBe('an');
   });
 });
 
-describe("expandPath", () => {
+describe('expandPath', () => {
   beforeAll(() => {
     process.env['HOME'] = HOME;
   });
 
-  it("returns a path without variables unchanged", () => {
-    const input = "HOME";
+  it('returns a path without variables unchanged', () => {
+    const input = 'HOME';
     expect(expandPath(input)).toEqual(input);
   });
 
-  it("expands the tilde (~)", () => {
+  it('expands the tilde (~)', () => {
     const file = 'test.doc';
     expect(expandPath(`~/${file}`)).toEqual(`${HOME}/${file}`);
   });
@@ -76,36 +76,36 @@ describe('parseBangCommand', () => {
     user: baseBangPayload.user,
   } as const;
 
-  it("returns None for invalid command", () => {
+  it('returns None for invalid command', () => {
     const payload = { ...baseBangPayload };
     expect(parseBangCommand(payload)).toEqual(None);
   });
 
-  it("returns value for command with no arguments", () => {
-    const text = "!pass";
+  it('returns value for command with no arguments', () => {
+    const text = '!pass';
     const payload = { ...baseBangPayload, text };
     expect(parseBangCommand(payload)).toEqual(
       Some({
         ...baseBangCommand,
-        command: "pass",
+        command: 'pass',
         payload: { ...baseBangPayload, text },
         rest: None,
         text,
-      })
+      }),
     );
   });
 
-  it("returns value for command with arguments", () => {
-    const text = "!pass the salt";
+  it('returns value for command with arguments', () => {
+    const text = '!pass the salt';
     const payload = { ...baseBangPayload, text };
     expect(parseBangCommand(payload)).toEqual(
       Some({
         ...baseBangCommand,
-        command: "pass",
+        command: 'pass',
         payload: { ...baseBangPayload, text },
-        rest: Some("the salt"),
+        rest: Some('the salt'),
         text,
-      })
+      }),
     );
   });
 });
@@ -123,10 +123,12 @@ describe('parseJson', () => {
 
   it('returns Some value for valid JSON', async () => {
     const input = '{ "name": "Joe", "numbers": [1, 2, 3] }';
-    expect(await parseJson(input)).toEqual(Some({
-      name: 'Joe',
-      numbers: [1, 2, 3],
-    }));
+    expect(await parseJson(input)).toEqual(
+      Some({
+        name: 'Joe',
+        numbers: [1, 2, 3],
+      }),
+    );
   });
 });
 

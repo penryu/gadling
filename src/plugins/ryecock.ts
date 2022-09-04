@@ -1,7 +1,6 @@
 import { App } from '@slack/bolt';
 import * as db from 'zapatos/db';
 import type * as s from 'zapatos/schema';
-
 import { getPool } from '../db';
 import log from '../log';
 import { articleFor, normalizeUserId, selectFrom } from '../util';
@@ -187,7 +186,7 @@ export class Ryecock {
 
     const callback = () => {
       this.floodChannel(chan_id, true).finally(() =>
-        setTimeout(callback, randomTimeout())
+        setTimeout(callback, randomTimeout()),
       );
     };
 
@@ -211,7 +210,7 @@ export class Ryecock {
       const { served_at: floodTime } = record;
 
       floodTime.setUTCMilliseconds(
-        floodTime.getUTCMilliseconds() + FLOOD_INTERVAL
+        floodTime.getUTCMilliseconds() + FLOOD_INTERVAL,
       );
       const now = new Date();
       if (autoFlood && floodTime > now) {
@@ -242,7 +241,7 @@ export class Ryecock {
             const text = flood(user_id);
             await client.chat.postMessage({ channel, text });
           }
-        })
+        }),
       );
     }
   }
@@ -265,7 +264,7 @@ export const init: PluginInit = (pm) => {
       const [recipient] = rest.value.split(/\s+/, 2);
 
       await say(serve(recipient || user));
-    }
+    },
   );
 
   pm.command(
@@ -278,7 +277,7 @@ export const init: PluginInit = (pm) => {
     },
     async ({ channel }) => {
       await ryecock.floodChannel(channel);
-    }
+    },
   );
 
   pm.message(
@@ -293,7 +292,7 @@ export const init: PluginInit = (pm) => {
       if (user && text.match(/\bmince\b/i)) {
         await say(flood(payload.user));
       }
-    }
+    },
   );
 
   ryecock.autoFlood('general').catch((err) => {

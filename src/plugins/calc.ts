@@ -1,7 +1,6 @@
 import childproc from 'child_process';
 import { env as ENV } from 'process';
 import { promisify } from 'util';
-
 import { log } from '../log';
 import { PluginInit } from './index';
 
@@ -34,7 +33,7 @@ export const Calc: PluginInit = (pm) => {
           await say(`My calculator (\`${calcBin}\`) is borken!`);
         }
       }
-    }
+    },
   );
 };
 

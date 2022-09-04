@@ -1,16 +1,14 @@
 import { App } from '@slack/bolt';
 import os from 'os';
-
 import log from '../log';
 import { packageJson } from '../metadata';
 import { CommandListener, MessageListener } from '../types';
 import { parseBangCommand } from '../util';
-
 import Calc from './calc';
 import Dice from './dice';
-import Karma from './karma';
 import Eightball from './eightball';
 import Hangman from './hangman';
+import Karma from './karma';
 import Pleasantries from './pleasantries';
 import Ryecock from './ryecock';
 import Splain from './splain';
@@ -47,7 +45,7 @@ export class PluginManager {
           ? this.renderHelp(section.value)
           : this.renderHelp();
         await say(output);
-      }
+      },
     );
 
     this.app.message(async (args) => {
@@ -87,18 +85,18 @@ export class PluginManager {
       const sectionEntries = this.help.filter((e) => e.section === section);
       for (const { command, description, examples } of sectionEntries) {
         output.push(
-          command ? `• \`${command}\` - ${description}` : `• ${description}`
+          command ? `• \`${command}\` - ${description}` : `• ${description}`,
         );
         if (examples) output.push(...examples.map((ex) => `    • ${ex}`));
       }
     } else {
       const sections = Array.from(
-        new Set(this.help.map((entry) => entry.section))
+        new Set(this.help.map((entry) => entry.section)),
       );
       sections.sort();
       output.push(
         `*Help Sections*`,
-        ...sections.map((sec) => `    • *${sec}*`)
+        ...sections.map((sec) => `    • *${sec}*`),
       );
       output.push('Use `!help SECTION` for help for that section');
     }
@@ -147,6 +145,6 @@ export const initializePlugins = (app: App) => {
       ];
 
       await say(response.join(' '));
-    }
+    },
   );
 };

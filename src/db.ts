@@ -1,5 +1,5 @@
-import { env } from 'process';
 import * as pg from 'pg';
+import { env } from 'process';
 
 let pool: pg.Pool;
 
@@ -10,4 +10,4 @@ export const getPool = (): pg.Pool => {
   }
 
   return pool;
-}
+};

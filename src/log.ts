@@ -2,15 +2,16 @@ import { Logger, LogLevel } from '@slack/bolt';
 import Pino from 'pino';
 
 export const log = Pino({
-  level: "trace",
-  name: "hob",
+  level: 'trace',
+  name: 'hob',
   transport: {
     options: {
       colorize: true,
       ignore: 'hostname,name,pid',
       translateTime: true,
     },
-    target: "pino-pretty" },
+    target: 'pino-pretty',
+  },
 });
 
 export const trace = log.trace;
@@ -24,8 +25,8 @@ export const error = log.error;
  */
 export class SlackLogger implements Logger {
   debug = (args: unknown[]): void => log.debug(args);
-  info  = (args: unknown[]): void => log.info(args);
-  warn  = (args: unknown[]): void => log.warn(args);
+  info = (args: unknown[]): void => log.info(args);
+  warn = (args: unknown[]): void => log.warn(args);
   error = (args: unknown[]): void => log.error(args);
 
   setLevel(level: LogLevel): void {
@@ -33,7 +34,7 @@ export class SlackLogger implements Logger {
   }
 
   getLevel(): LogLevel {
-    const level = (log.level === 'trace') ? 'debug' : log.level;
+    const level = log.level === 'trace' ? 'debug' : log.level;
     return level as LogLevel;
   }
 
