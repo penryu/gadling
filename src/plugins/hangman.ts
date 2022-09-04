@@ -95,6 +95,7 @@ class HangmanGame {
     if (!this.inProgress) return Err('The game is over!');
 
     if (guess === this._word) {
+      this._word.split('').forEach((c) => this._suggested.add(c));
       this._outcome = HangmanOutcome.ALIVE;
     } else {
       ++this._limbs;
@@ -137,11 +138,12 @@ const displayGame = async (say: SayFn) => {
     const { value: game } = currentGame;
     const { inProgress, missed, outcome, redactedWord, word } = game;
 
+    const lettersGuessed = redactedWord.toUpperCase().split('').join(' ');
     const lettersMissed = missed.map((c) => `\`${c.toUpperCase()}\``).join(' ');
 
     const output = [
       ...renderGallows(game),
-      `The word so far: \`${redactedWord}\``,
+      `The word so far: \`${lettersGuessed}\``,
       `Letters missed: ${lettersMissed}`,
     ];
 
@@ -193,6 +195,19 @@ const renderGallows = (game: HangmanGame): Array<string> => {
 };
 
 export const Hangman: PluginInit = (pm) => {
+  const isValidChannel = async (
+    say: SayFn,
+    channel: string,
+  ): Promise<boolean> => {
+    const hangmanChannel = env.HANGMAN_CHANNEL;
+    log.info('Verifying current channel %s === %s', channel, hangmanChannel);
+    if (!hangmanChannel || hangmanChannel === channel) return true;
+
+    await say(`Join me in the <#${hangmanChannel}> channel!`);
+    log.info('Refusing to play hangman from %s', channel);
+    return false;
+  };
+
   const makeReply =
     ({
       channel,
@@ -217,21 +232,23 @@ export const Hangman: PluginInit = (pm) => {
     },
     async ({ channel, rest, timestamp, user }, { say }) => {
       log.trace('Starting new game');
+      if (!(await isValidChannel(say, channel))) return;
 
       const user_id = normalizeUserId(user);
+
       const replyWith = makeReply({ channel, say, timestamp });
 
       if (rest.some) {
         await replyWith(
           Emoji.FAIL,
-          `${user_id} I don't know what to do with \`${rest.value}\``
+          `${user_id} I don't know what to do with \`${rest.value}\``,
         );
         return;
       }
 
       if (currentGame.some) {
         await say(
-          "It looks like there's a game in progress. Do you want to `!giveup`?"
+          "It looks like there's a game in progress. Do you want to `!giveup`?",
         );
         await displayGame(say);
         return;
@@ -253,7 +270,7 @@ export const Hangman: PluginInit = (pm) => {
       } else {
         await replyWith(Emoji.FAIL, 'Something went wrong. Try again?');
       }
-    }
+    },
   );
 
   pm.command(
@@ -266,6 +283,7 @@ export const Hangman: PluginInit = (pm) => {
     },
     async ({ channel, rest, timestamp, user }, { say }) => {
       log.trace('User guessed the word');
+      if (!(await isValidChannel(say, channel))) return;
 
       const user_id = normalizeUserId(user);
 
@@ -286,7 +304,7 @@ export const Hangman: PluginInit = (pm) => {
       const result = game.guessWord(guess);
       if (!result.ok) await replyWith(Emoji.FAIL, result.error.message);
       await displayGame(say);
-    }
+    },
   );
 
   pm.command(
@@ -299,6 +317,7 @@ export const Hangman: PluginInit = (pm) => {
     },
     async ({ channel, rest, timestamp, user }, { say }) => {
       log.trace('User suggested letter');
+      if (!(await isValidChannel(say, channel))) return;
 
       const user_id = normalizeUserId(user);
 
@@ -328,7 +347,7 @@ export const Hangman: PluginInit = (pm) => {
       }
 
       await displayGame(say);
-    }
+    },
   );
 
   pm.command(
@@ -338,12 +357,13 @@ export const Hangman: PluginInit = (pm) => {
       command: '!giveup',
       description: 'cancels running game and displays the word',
     },
-    async ({ user }, { say }) => {
+    async ({ user, channel }, { say }) => {
       log.trace(`Giving up`);
+      if (!(await isValidChannel(say, channel))) return;
 
       if (!currentGame.some || !currentGame.value.inProgress) {
         await say(
-          "There's no game in progress. Start a new one with `!hangman`"
+          "There's no game in progress. Start a new one with `!hangman`",
         );
         return;
       }
@@ -355,7 +375,7 @@ export const Hangman: PluginInit = (pm) => {
       game.forfeit();
 
       await displayGame(say);
-    }
+    },
   );
 };
 
