@@ -1,13 +1,11 @@
 import { SayFn } from '@slack/bolt';
 import * as db from 'zapatos/db';
 import type * as s from 'zapatos/schema';
-
 import { Emoji } from '../constants';
 import { getPool } from '../db';
 import log from '../log';
 import { Err, None, Ok, Option, Result, Some } from '../types';
 import { selectFrom } from '../util';
-
 import { PluginInit } from './index';
 
 interface FactRecord {
@@ -41,7 +39,7 @@ export async function dump(): Promise<Result<Array<FactRecord>>> {
 
 export async function forget(
   thing: string,
-  fact: string
+  fact: string,
 ): Promise<Result<number>> {
   log.debug(`forget: ${thing} := ${fact}`);
 
@@ -107,7 +105,7 @@ async function lookup(thing: string): Promise<Result<Array<string>>> {
 }
 
 async function search(
-  term: string
+  term: string,
 ): Promise<Result<Array<Record<string, string>>>> {
   if (term.length < 3) return Err('query too short');
   log.debug(`search: ${term}`);
@@ -181,7 +179,7 @@ export const init: PluginInit = (pm) => {
 
       const result = await forget(thing, fact);
       await replyWith(result.ok ? Emoji.OK : Emoji.FAIL);
-    }
+    },
   );
 
   pm.command(
@@ -204,7 +202,7 @@ export const init: PluginInit = (pm) => {
 
       const result = await forgetAll(thing.value);
       await replyWith(result.ok ? Emoji.OK : Emoji.FAIL);
-    }
+    },
   );
 
   pm.command(
@@ -230,7 +228,7 @@ export const init: PluginInit = (pm) => {
       if (!result.ok) log.error(`Failed to learn: ${text}`, result.error);
 
       await replyWith(result.ok ? Emoji.OK : Emoji.FAIL);
-    }
+    },
   );
 
   pm.command(
@@ -260,10 +258,10 @@ export const init: PluginInit = (pm) => {
       } else {
         await replyWith(
           Emoji.WRONG,
-          `I don't have anything for \`${thing.value}\``
+          `I don't have anything for \`${thing.value}\``,
         );
       }
-    }
+    },
   );
 
   pm.command(
@@ -292,7 +290,7 @@ export const init: PluginInit = (pm) => {
             content: JSON.stringify(
               { searchTerm, results: results.value },
               null,
-              2
+              2,
             ),
             filetype: 'javascript',
             ts,
@@ -305,10 +303,10 @@ export const init: PluginInit = (pm) => {
         const { message } = results.error;
         await replyWith(
           Emoji.WRONG,
-          `I don't have anything for \`${searchTerm}\`: \`${message}\``
+          `I don't have anything for \`${searchTerm}\`: \`${message}\``,
         );
       }
-    }
+    },
   );
 
   pm.message(
@@ -328,9 +326,9 @@ export const init: PluginInit = (pm) => {
       await say(
         fact.some
           ? `${thing} == ${fact.value}`
-          : `I can't find anything for \`${thing}\``
+          : `I can't find anything for \`${thing}\``,
       );
-    }
+    },
   );
 
   pm.message(
@@ -353,9 +351,11 @@ export const init: PluginInit = (pm) => {
 
       if (result.length > 0) {
         const { thing, fact } = selectFrom(result);
-        await say(`I heard ${thing} was ${fact}`);
+        await say(
+          selectFrom([`${thing} is ${fact}`, `I heard ${thing} was ${fact}`]),
+        );
       }
-    }
+    },
   );
 
   pm.message(
@@ -379,7 +379,7 @@ export const init: PluginInit = (pm) => {
       if (fact.some) {
         await say(`${thing} ${verb} ${fact.value}`);
       }
-    }
+    },
   );
 
   pm.message(
@@ -417,7 +417,7 @@ export const init: PluginInit = (pm) => {
           });
         }
       }
-    }
+    },
   );
 
   pm.command(
@@ -436,7 +436,7 @@ export const init: PluginInit = (pm) => {
             (inactive ? data.inactive : data.active).push({ [thing]: fact });
             return data;
           },
-          initialValue
+          initialValue,
         );
         await pm.app.client.files.upload({
           channels: channel,
@@ -447,7 +447,7 @@ export const init: PluginInit = (pm) => {
       } else {
         await say(`I didn't find anything! ${results.error.message}`);
       }
-    }
+    },
   );
 };
 

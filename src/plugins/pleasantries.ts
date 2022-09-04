@@ -1,5 +1,4 @@
 import { normalizeUserId, selectFrom, sleep } from '../util';
-
 import { PluginInit } from './index';
 
 const ResponseTable: Array<[RegExp, Array<string>]> = [
@@ -47,6 +46,19 @@ export const init: PluginInit = (pm) => {
   pm.message(
     {
       section: 'pleasantries',
+      description: 'I will sometimes serve chocolate ice cream',
+    },
+    async ({ payload, say }) => {
+      if (payload.subtype !== undefined) return;
+
+      if (payload.text?.match(/\b(crap(py)?|poop|shit(ty)?)\b/i)) {
+        await say(':poop:');
+      }
+    },
+  );
+  pm.message(
+    {
+      section: 'pleasantries',
       description: '`today` will display the current day of the week',
     },
     async ({ payload, say }) => {
@@ -68,7 +80,7 @@ export const init: PluginInit = (pm) => {
         const today = dow[new Date().getDay()] ?? 'just another day';
         await say(today);
       }
-    }
+    },
   );
 
   pm.message(
@@ -91,7 +103,7 @@ export const init: PluginInit = (pm) => {
           return;
         }
       }
-    }
+    },
   );
 };
 
