@@ -30,7 +30,7 @@ function roll(text: string): Option<string> {
     const dice = opt_dice.value;
     const outcome = Array.from(
       { length: dice.count },
-      () => Math.floor(Math.random() * dice.faces) + 1
+      () => Math.floor(Math.random() * dice.faces) + 1,
     );
     const results = outcome.map((n) => `\`${n}\``).join(' | ');
     return Some(`${dice.spec} => ${results}`);
@@ -63,7 +63,7 @@ export const Dice: PluginInit = (pm) => {
         await say(Math.random().toString());
         return;
       }
-    }
+    },
   );
 
   const HELP = {
@@ -99,7 +99,7 @@ Example: \`!dice 2d6\` => \`2d6 => 3 | 5\`` +
       }
 
       await say(HELP.dice);
-    }
+    },
   );
 
   pm.message(
@@ -117,7 +117,7 @@ Example: \`!dice 2d6\` => \`2d6 => 3 | 5\`` +
         log.info('Dice: message: %o', payload);
         await say(output.value);
       }
-    }
+    },
   );
 };
 
