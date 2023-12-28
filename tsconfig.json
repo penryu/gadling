@@ -33,17 +33,8 @@
     "skipDefaultLibCheck": true,
     "skipLibCheck": true
   },
-  "include": [
-    "src/**/*.ts"
-  ],
-  "exclude": [
-    "build",
-    "node_modules",
-    "src/**/*.test.ts"
-  ],
-  "files": [
-    "src/zapatos/schema.d.ts"
-  ],
+  "include": ["src/**/*.ts"],
+  "exclude": ["build", "node_modules", "src/**/*.test.ts"],
   "ts-node": {
     "files": true
   }

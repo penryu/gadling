@@ -44,7 +44,7 @@ export const Eightball: PluginInit = (pm) => {
       }
 
       await say(`What's the question, ${normalizeUserId(user)}`);
-    }
+    },
   );
 };
 

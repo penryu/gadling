@@ -21,7 +21,7 @@ export function normalizeUserId(id: string): string {
 }
 
 export function parseBangCommand(
-  payload: KnownEventFromType<'message'>
+  payload: KnownEventFromType<'message'>,
 ): Option<BangCommand> {
   if (payload.subtype || !payload.text) return None;
 
@@ -53,7 +53,7 @@ export function selectFrom<T>(xs: Array<T>): T {
 
 export async function selectFromFile(
   path: string,
-  pattern?: RegExp
+  pattern?: RegExp,
 ): Promise<Option<string>> {
   log.debug('Selecting lines from %s matching %s', path, pattern);
 
@@ -87,7 +87,7 @@ export const sleep = async (ms: number) =>
   });
 
 export const userFromPayload = (
-  payload: EventFromType<'message'>
+  payload: EventFromType<'message'>,
 ): Option<string> => {
   return !payload.subtype && payload.text ? Some(payload.user) : None;
 };
