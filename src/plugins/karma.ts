@@ -1,9 +1,10 @@
-import * as db from 'zapatos/db';
-import type * as s from 'zapatos/schema';
+import { sql } from 'kysely';
+
 import { Emoji } from '../constants';
-import { getPool } from '../db';
+import db from '../db';
 import log from '../log';
 import { Err, Ok, Result } from '../types';
+
 import { PluginInit } from './index';
 
 enum KarmaChange {
@@ -15,26 +16,28 @@ enum KarmaChange {
 async function bumpKarma(
   thing: string,
   change: KarmaChange,
-): Promise<Result<boolean>> {
-  log.debug(`increment: ${thing}`);
+): Promise<Result<null>> {
+  log.debug(`karma bump ${thing}`);
+
+  const op = change === KarmaChange.Increment ? sql`+` : sql`-`;
 
   try {
-    await db.serializable(getPool(), async (txClient) => {
-      const record = { thing, value: 0 };
-      await db.sql`
-        INSERT INTO ${'karma'} (${db.cols(record)}) VALUES (${db.vals(record)})
-        ON CONFLICT (${'thing'}) DO NOTHING
-      `.run(txClient);
+    await db.transaction().execute(async (tx) => {
+      await tx
+        .insertInto('karma')
+        .values({ thing, value: 0 })
+        .onConflict((oc) => oc.column('thing').doNothing())
+        .executeTakeFirstOrThrow();
 
-      const op = change === KarmaChange.Increment ? db.sql`+` : db.sql`-`;
-      await db.sql<s.karma.SQL, s.karma.Selectable[]>`
-        UPDATE ${'karma'} SET ${'value'} = ${'value'} ${op} 1
-        WHERE ${{ thing }}
-        RETURNING ${'value'}
-      `.run(txClient);
+      return await tx
+        .updateTable('karma')
+        .set({ value: sql`value ${op} 1` })
+        .where('thing', '=', thing)
+        .returning('value')
+        .executeTakeFirstOrThrow();
     });
 
-    return Ok(true);
+    return Ok(null);
   } catch (e: unknown) {
     log.error('Failed to update karma %s for %s: %s', change, thing, e);
     return Err(e instanceof Error || typeof e === 'string' ? e : String(e));
@@ -45,7 +48,11 @@ async function karmaFor(thing: string): Promise<Result<number>> {
   log.debug(`karmaFor: ${thing}`);
 
   try {
-    const row = await db.selectOne('karma', { thing }).run(getPool());
+    const row = await db
+      .selectFrom('karma')
+      .select('value')
+      .where('thing', '=', thing)
+      .executeTakeFirstOrThrow();
     return row ? Ok(row.value) : Err(`No karma for ${thing}`);
   } catch (e: unknown) {
     log.error('Failed to lookup %s: %s', thing, e);

@@ -1,5 +1,5 @@
 import { GenericMessageEvent } from '@slack/bolt';
-import { BangCommand, None, Some, SomeType } from './types';
+import { BangCommand, None, Some } from './types';
 import {
   articleFor,
   expandPath,
@@ -133,34 +133,24 @@ describe('parseJson', () => {
 });
 
 describe('selectFrom', () => {
-  it('returns None for undefined', () => {
-    expect(selectFrom(undefined)).toEqual(None);
-  });
-
-  it('returns None for null', () => {
-    expect(selectFrom(null)).toEqual(None);
-  });
-
   it('returns None for empty arrays', () => {
-    expect(selectFrom([])).toEqual(None);
+    expect(selectFrom([])).not.toBeDefined();
   });
 
   it('returns Some for array of 1 element', () => {
-    expect(selectFrom([42])).toEqual(Some(42));
+    expect(selectFrom([42])).toEqual(42);
   });
 
   it('returns Some for array of multiple elements', () => {
     const list = [1, 2, 3];
-    const selected = selectFrom(list) as SomeType<number>;
-    expect(selected.some).toBe(true);
-    const result = list.includes(selected.value);
-    expect(result).toBe(true);
+    const selected = selectFrom(list);
+    expect(list.includes(selected)).toBe(true);
   });
 });
 
 describe('sleep', () => {
   it('sleeps for specified milliseconds (+/- 5ms)', async () => {
-    const ms = 200;
+    const ms = 50;
     const start = Date.now();
     await sleep(ms);
     const delta = Date.now() - start;
