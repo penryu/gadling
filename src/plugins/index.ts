@@ -126,7 +126,7 @@ export const initializePlugins = (app: App) => {
     async (_, { say }) => {
       const { user: my_name } = await pm.app.client.auth.test();
       const cpus = os.cpus();
-      const cpuModel = cpus[0]?.model ?? 'unknown CPU model';
+      const cpuModel = cpus[0]?.model.trimEnd() ?? 'unknown CPU model';
       const cpuCount = cpus.length;
       const cpuArch = os.arch();
       const hostname = os.hostname();

@@ -7,6 +7,7 @@ import { normalizeUserId, selectFromFile } from '../util';
 import { PluginInit } from './index';
 
 const WORDS_FILE = env.WORDS_PATH || '/usr/share/dict/words';
+const MIN_WORD_LENGTH = 6;
 
 enum HangmanOutcome {
   ALIVE = 'ALIVE',
@@ -17,7 +18,7 @@ enum HangmanOutcome {
 
 class HangmanGame {
   private static readonly ALPHABET = 'abcdefghijklmnopqrstuvwxyz';
-  private static readonly DEAD_LIMBS = 6;
+  private static readonly DEAD_LIMBS = 7;
   private readonly _word: string;
   private _outcome: HangmanOutcome = HangmanOutcome.IN_PROGRESS;
   private _suggested: Set<string> = new Set();
@@ -67,6 +68,10 @@ class HangmanGame {
     return Ok(this._word);
   }
 
+  public get wordLength(): number {
+    return this._word.length;
+  }
+
   evaluate() {
     log.trace(`Evaluating game...`);
 
@@ -87,7 +92,7 @@ class HangmanGame {
     if (this.inProgress) this._outcome = HangmanOutcome.FORFEIT;
   }
 
-  guessWord(guess: string): Result<HangmanOutcome> {
+  solveWord(guess: string): Result<HangmanOutcome> {
     log.debug(`User guessed "${guess}"`);
 
     guess = guess.toLowerCase();
@@ -105,7 +110,7 @@ class HangmanGame {
     return Ok(this._outcome);
   }
 
-  suggestLetter(letter: string): Result<boolean> {
+  guessLetter(letter: string): Result<boolean> {
     log.debug(`User suggested letter "${letter}"`);
 
     letter = letter.toLowerCase();
@@ -180,11 +185,12 @@ const renderGallows = (game: HangmanGame): Array<string> => {
   const RL = limbs >= 4 ? '\\' : ' ';
   const LA = limbs >= 5 ? '\\' : ' ';
   const RA = limbs >= 6 ? '/' : ' ';
+  const RP = limbs >= 7 ? '\u2506' : ' ';
 
   return [
     '```',
     '\u2554\u2550\u2550\u2550\u2550\u2555',
-    '\u2551    \u2506',
+    `\u2551    ${RP}`,
     `\u2551   ${LA}${H}${RA}`,
     `\u2551    ${B}`,
     `\u2551   ${LL} ${RL}`,
@@ -208,6 +214,8 @@ export const Hangman: PluginInit = (pm) => {
     return false;
   };
 
+  type ReplyFn = (emoji: Emoji, message?: string) => Promise<void>;
+
   const makeReply =
     ({
       channel,
@@ -217,11 +225,69 @@ export const Hangman: PluginInit = (pm) => {
       channel: string;
       say: SayFn;
       timestamp: string;
-    }) =>
+    }): ReplyFn =>
     async (emoji: Emoji, message?: string) => {
       await pm.app.client.reactions.add({ channel, timestamp, name: emoji });
       if (message) await say(message);
     };
+
+  const userSolvePuzzle = async ({
+    channel,
+    replyWith,
+    say,
+    user_id,
+    word,
+  }: {
+    channel: string;
+    replyWith: ReplyFn;
+    say: SayFn;
+    word: string;
+    user_id: string;
+  }) => {
+    log.trace(`${user_id} attempted to solve with ${word}`);
+
+    if (!(await isValidChannel(say, channel))) return;
+
+    if (!currentGame.some) {
+      await replyWith(Emoji.FAIL, `There's no game in progress, ${user_id}.`);
+      return;
+    }
+
+    const { value: game } = currentGame;
+    const result = game.solveWord(word);
+    if (!result.ok) await replyWith(Emoji.FAIL, result.error.message);
+    await displayGame(say);
+  };
+
+  const userSuggestLetter = async ({
+    channel,
+    letter,
+    replyWith,
+    say,
+    user_id,
+  }: {
+    channel: string;
+    letter: string;
+    replyWith: ReplyFn;
+    say: SayFn;
+    user_id: string;
+  }) => {
+    log.trace(`${user_id} suggested letter ${letter}`);
+
+    if (!(await isValidChannel(say, channel))) return;
+
+    if (!currentGame.some) {
+      await replyWith(Emoji.FAIL, `There's no game in progress, ${user_id}.`);
+      return;
+    }
+
+    const { value: game } = currentGame;
+    const result = game.guessLetter(letter);
+
+    if (!result.ok) await replyWith(Emoji.FAIL, result.error.message);
+
+    await displayGame(say);
+  };
 
   pm.command(
     'hangman',
@@ -255,7 +321,8 @@ export const Hangman: PluginInit = (pm) => {
       }
 
       try {
-        const word = await selectFromFile(WORDS_FILE, /^[a-z]+$/);
+        const re = new RegExp(`^[a-z]{${MIN_WORD_LENGTH},}$`);
+        const word = await selectFromFile(WORDS_FILE, re);
         if (word.some) {
           const newGame = new HangmanGame(word.value);
           currentGame = Some(newGame);
@@ -274,20 +341,20 @@ export const Hangman: PluginInit = (pm) => {
   );
 
   pm.command(
-    'guess',
+    'solve',
     {
       section: 'hangman',
-      command: '!guess WORD',
-      description: 'Make a guess about the Hangman word',
-      examples: ['`!guess rosebud`'],
+      command: '!solve WORD',
+      description: 'Attempt to solve the puzzle word',
+      examples: ['`!solve rosebud`'],
     },
     async ({ channel, rest, timestamp, user }, { say }) => {
-      log.trace('User guessed the word');
+      log.trace(`${user} attempted to solve the puzzle`);
+
       if (!(await isValidChannel(say, channel))) return;
 
-      const user_id = normalizeUserId(user);
-
       const replyWith = makeReply({ channel, say, timestamp });
+      const user_id = normalizeUserId(user);
 
       if (!currentGame.some) {
         await replyWith(Emoji.FAIL, `There's no game in progress, ${user_id}.`);
@@ -299,37 +366,29 @@ export const Hangman: PluginInit = (pm) => {
         return;
       }
 
-      const { value: game } = currentGame;
-      const guess = rest.value;
-      const result = game.guessWord(guess);
-      if (!result.ok) await replyWith(Emoji.FAIL, result.error.message);
-      await displayGame(say);
+      const word = rest.value;
+      await userSolvePuzzle({ channel, replyWith, say, user_id, word });
     },
   );
 
   pm.command(
-    'letter',
+    'guess',
     {
       section: 'hangman',
-      command: '!letter LETTER',
+      command: '!guess LETTER',
       description: 'suggest a letter',
-      examples: ['`!letter x`'],
+      examples: ['`!guess x`'],
     },
     async ({ channel, rest, timestamp, user }, { say }) => {
-      log.trace('User suggested letter');
+      log.trace(`${user} guessed a letter`);
+
       if (!(await isValidChannel(say, channel))) return;
 
+      const replyWith = makeReply({ channel, say, timestamp });
       const user_id = normalizeUserId(user);
 
-      const replyWith = makeReply({ channel, say, timestamp });
-
-      if (!currentGame.some) {
-        await replyWith(Emoji.FAIL, `There's no game in progress, ${user_id}.`);
-        return;
-      }
-
       if (!rest.some) {
-        await replyWith(Emoji.FAIL, `What letter are asking for?`);
+        await replyWith(Emoji.FAIL, `What letter are asking for, ${user_id}?`);
         return;
       }
 
@@ -339,14 +398,7 @@ export const Hangman: PluginInit = (pm) => {
         return;
       }
 
-      const { value: game } = currentGame;
-      const result = game.suggestLetter(letter);
-
-      if (!result.ok) {
-        await replyWith(Emoji.FAIL, result.error.message);
-      }
-
-      await displayGame(say);
+      await userSuggestLetter({ channel, letter, replyWith, say, user_id });
     },
   );
 
@@ -375,6 +427,45 @@ export const Hangman: PluginInit = (pm) => {
       game.forfeit();
 
       await displayGame(say);
+    },
+  );
+
+  pm.message(
+    {
+      section: 'hangman',
+      description: 'Guess a letter by using it alone on a line',
+    },
+    async ({ event, payload, say }) => {
+      if (payload.subtype || !payload.text || !currentGame.some) return;
+
+      const { text: letter, user } = payload;
+      if (user && letter.length === 1 && letter.match(/[A-Za-z]/)) {
+        const { channel, ts: timestamp } = event;
+        const replyWith = makeReply({ channel, say, timestamp });
+        const user_id = normalizeUserId(user);
+        await userSuggestLetter({ channel, letter, replyWith, say, user_id });
+      }
+    },
+  );
+
+  pm.message(
+    {
+      section: 'hangman',
+      description: 'Solve by using the word alone on a line',
+    },
+    async ({ event, payload, say }) => {
+      if (payload.subtype || !payload.text || !currentGame.some) return;
+
+      const { text: word, user } = payload;
+      if (!user || !word.match(/[A-Za-z]/)) return;
+
+      const game = currentGame.value;
+      if (word.length === game.wordLength) {
+        const { channel, ts: timestamp } = event;
+        const replyWith = makeReply({ channel, say, timestamp });
+        const user_id = normalizeUserId(user);
+        await userSolvePuzzle({ channel, replyWith, say, user_id, word });
+      }
     },
   );
 };
