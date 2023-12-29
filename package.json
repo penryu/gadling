@@ -10,8 +10,7 @@
     "lint": "tsc --noEmit && eslint .",
     "migrate": "dbmate up",
     "start": "node build/index.js",
-    "test": "jest",
-    "prepare": "husky install"
+    "test": "jest"
   },
   "dependencies": {
     "@slack/bolt": "^3.17.0",
