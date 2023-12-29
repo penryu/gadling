@@ -80,7 +80,7 @@ Example: \`!dice 2d6\` => \`2d6 => 3 | 5\`` +
     'dice',
     {
       section: 'dice',
-      command: '`!dice`',
+      command: '!dice',
       description: 'Rolls dice specified D&D-style',
       examples: [
         '`!dice d6` - returns random integer [1, 6]',
