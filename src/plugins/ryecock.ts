@@ -218,7 +218,7 @@ export const init: PluginInit = (pm) => {
     'serve',
     {
       section: 'ryecock',
-      command: '`!serve RECIPIENT`',
+      command: '!serve RECIPIENT',
       description: 'Ensures the recipient receives the US RDA of mince',
       examples: ['`!serve @guest`'],
     },
@@ -235,7 +235,7 @@ export const init: PluginInit = (pm) => {
     'flood',
     {
       section: 'ryecock',
-      command: '`!flood`',
+      command: '!flood',
       description: 'Flood the channel with mince',
       examples: ['`!flood`'],
     },
