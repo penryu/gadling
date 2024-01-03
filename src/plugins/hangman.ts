@@ -194,7 +194,6 @@ const renderGallows = (game: HangmanGame): Array<string> => {
     `\u2551   ${LA}${H}${RA}`,
     `\u2551    ${B}`,
     `\u2551   ${LL} ${RL}`,
-    '\u2551',
     '\u2569\u2550\u2550\u2550\u2550\u2550\u2550',
     '```',
   ];
