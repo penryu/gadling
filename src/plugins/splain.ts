@@ -1,8 +1,7 @@
 import { SayFn } from '@slack/bolt';
-import * as db from 'zapatos/db';
-import type * as s from 'zapatos/schema';
+import { sql } from 'kysely';
+import db from '../db';
 import { Emoji } from '../constants';
-import { getPool } from '../db';
 import log from '../log';
 import { Err, None, Ok, Option, Result, Some } from '../types';
 import { selectFrom } from '../util';
@@ -26,10 +25,12 @@ export async function dump(): Promise<Result<Array<FactRecord>>> {
   log.debug(`dump`);
 
   try {
-    const rows = await db.sql<s.facts.SQL, s.facts.Selectable[]>`
-      SELECT ${'thing'}, ${'fact'}, ${'inactive'} FROM ${'facts'}
-      ORDER BY ${'thing'}, ${'fact'}, ${'inactive'} LIMIT 500
-    `.run(getPool());
+    const rows = await db
+      .selectFrom('facts')
+      .select(['thing', 'fact', 'inactive'])
+      .orderBy(['thing', 'fact', 'inactive'])
+      .limit(500)
+      .execute();
     return Ok(rows);
   } catch (e: unknown) {
     log.error('Failed to collect factdump: %s', e);
@@ -44,9 +45,12 @@ export async function forget(
   log.debug(`forget: ${thing} := ${fact}`);
 
   try {
-    const changes = await db.sql`
-      UPDATE facts SET inactive = TRUE WHERE ${{ thing }} AND ${{ fact }}
-    `.run(getPool());
+    const changes = await db
+      .updateTable('facts')
+      .set({ inactive: sql`TRUE` })
+      .where('thing', '=', thing)
+      .where('fact', '=', fact)
+      .execute();
     return Ok(changes.length);
   } catch (e: unknown) {
     log.error('Failed to delete [%s == %s]: %s', thing, fact, e);
@@ -58,9 +62,11 @@ export async function forgetAll(thing: string): Promise<Result<number>> {
   log.debug(`forgetAll: ${thing}`);
 
   try {
-    const changes = await db.sql`
-      UPDATE facts SET ${'inactive'} = TRUE WHERE ${{ thing }}
-    `.run(getPool());
+    const changes = await db
+      .updateTable('facts')
+      .set({ inactive: sql`TRUE` })
+      .where('thing', '=', thing)
+      .execute();
     return Ok(changes.length);
   } catch (e: unknown) {
     log.error('Failed to delete facts for %s: %s', thing, e);
@@ -72,13 +78,14 @@ async function learn(thing: string, fact: string): Promise<Result<number>> {
   log.debug(`learn: ${thing} := ${fact}`);
 
   try {
-    const record = { thing, fact };
-    await db.sql`
-      INSERT INTO ${'facts'} (${db.cols(record)})
-        VALUES (${db.vals(record)})
-      ON CONFLICT (${db.cols(record)}) DO
-        UPDATE SET ${'inactive'} = FALSE
-    `.run(getPool());
+    await db
+      .insertInto('facts')
+      .values({ thing, fact, inactive: sql`FALSE` })
+      .onConflict((oc) =>
+        oc.columns(['thing', 'fact']).doUpdateSet({ inactive: sql`FALSE` }),
+      )
+      .execute();
+
     return Ok(0);
   } catch (e: unknown) {
     log.error('Failed to insert %s == %s: %s', thing, fact, e);
@@ -90,11 +97,15 @@ async function lookup(thing: string): Promise<Result<Array<string>>> {
   log.debug(`lookup: ${thing}`);
 
   try {
-    const records = await db.sql<s.facts.SQL, s.facts.Selectable[]>`
-      SELECT ${'fact'} FROM ${'facts'}
-      WHERE ${{ thing, inactive: false }}
-      ORDER BY ${'fact'} LIMIT 100
-    `.run(getPool());
+    const records = await db
+      .selectFrom('facts')
+      .select('fact')
+      .where('thing', '=', thing)
+      .where('inactive', '=', sql`FALSE`)
+      .orderBy('fact')
+      .limit(100)
+      .execute();
+
     return records.length > 0
       ? Ok(records.map((r) => r.fact))
       : Err('no matching facts');
@@ -112,18 +123,19 @@ async function search(
 
   try {
     const sqlTerm = `%${term}%`;
-    const records = await db.sql<s.facts.SQL, s.facts.Selectable[]>`
-        SELECT ${'thing'}, ${'fact'} FROM ${'facts'}
-        WHERE (
-          ${'thing'} ILIKE ${db.param(sqlTerm)} OR
-          ${'fact'} ILIKE ${db.param(sqlTerm)}
-        ) AND ${'inactive'} = FALSE
-        ORDER BY ${'thing'}, ${'fact'}
-        LIMIT 100
-    `.run(getPool());
-    return records?.length > 0
-      ? Ok(records.map(({ thing, fact }) => ({ [thing]: fact })))
-      : Err(`No facts for ${term}`);
+
+    const records = await db
+      .selectFrom('facts')
+      .select(['thing', 'fact'])
+      .where((eb) =>
+        eb.or([eb('thing', 'like', sqlTerm), eb('fact', 'like', sqlTerm)]),
+      )
+      .where('inactive', '=', sql`FALSE`)
+      .orderBy(['thing', 'fact'])
+      .limit(500)
+      .execute();
+
+    return records?.length > 0 ? Ok(records) : Err(`No facts for ${term}`);
   } catch (e: unknown) {
     log.error('Failed to lookup %s: %s', term, e);
     return Err(e instanceof Error || typeof e === 'string' ? e : String(e));
@@ -282,16 +294,14 @@ export const init: PluginInit = (pm) => {
 
       const searchTerm = thing.value.trim();
       const results = await search(searchTerm);
+
       if (results.ok) {
+        const pairs = results.value.map((obj) => [obj.thing, obj.fact]);
         try {
           const { ts } = payload;
           await pm.app.client.files.upload({
             channels: channel,
-            content: JSON.stringify(
-              { searchTerm, results: results.value },
-              null,
-              2,
-            ),
+            content: JSON.stringify({ searchTerm, results: pairs }, null, 2),
             filetype: 'javascript',
             ts,
             title: searchTerm,
@@ -340,20 +350,19 @@ export const init: PluginInit = (pm) => {
       if (payload.subtype || !payload.text) return;
 
       const { text } = payload;
-      if (text.length <= 5 || text.length > 42) return;
+      if (text.length < 5 || text.length > 42) return;
+      if (text.startsWith('!') || text.startsWith('?')) return;
 
-      const result = await db.sql<s.facts.SQL, s.facts.Selectable[]>`
-        SELECT ${'thing'}, ${'fact'}
-        FROM ${'facts'}
-        WHERE ${'fact'} ILIKE ${db.param(`%${text}%`)}
-          OR ${'thing'} ILIKE ${db.param(`%${text}%`)}
-      `.run(getPool());
+      const result = await search(text);
+      if (result.ok) {
+        const rows = result.value;
 
-      if (result.length > 0) {
-        const { thing, fact } = selectFrom(result);
-        await say(
-          selectFrom([`${thing} is ${fact}`, `I heard ${thing} was ${fact}`]),
-        );
+        if (rows.length > 0) {
+          const { thing, fact } = selectFrom(rows);
+          await say(
+            selectFrom([`${thing} is ${fact}`, `I heard ${thing} was ${fact}`]),
+          );
+        }
       }
     },
   );

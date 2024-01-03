@@ -3,6 +3,7 @@ import {
   Middleware,
   SlackEventMiddlewareArgs,
 } from '@slack/bolt';
+import K from 'kysely';
 
 /*
  * Utility types
@@ -65,4 +66,34 @@ export interface CommandHandler {
 export interface MessageHandler {
   help: Array<string>;
   listener: MessageListener;
+}
+
+/*
+ * Database types
+ */
+
+export interface FactTable {
+  id: K.Generated<number>;
+  thing: string;
+  fact: string;
+  inactive: boolean;
+}
+
+export type Fact = K.Selectable<FactTable>;
+export type NewFact = K.Insertable<FactTable>;
+export type UpdateFact = K.Updateable<FactTable>;
+
+export interface KarmaTable {
+  id: K.Generated<number>;
+  thing: string;
+  value: number;
+}
+
+export type Karma = K.Selectable<KarmaTable>;
+export type NewKarma = K.Insertable<KarmaTable>;
+export type UpdateKarma = K.Updateable<KarmaTable>;
+
+export interface Database {
+  facts: FactTable;
+  karma: KarmaTable;
 }

@@ -3,7 +3,6 @@ import { App } from '@slack/bolt';
 import { config as dotenvConfig } from 'dotenv';
 import os from 'os';
 import path from 'path';
-import { getPool } from './db';
 import { log, SlackLogger } from './log';
 import { initializePlugins } from './plugins';
 
@@ -19,8 +18,6 @@ void (async () => {
   });
 
   // Initiate database connection
-  getPool();
-
   initializePlugins(app);
 
   await app.start();
