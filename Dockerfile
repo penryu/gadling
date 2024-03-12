@@ -1,6 +1,6 @@
 # Build hpnc
 FROM rust:alpine AS hpnc
-RUN cargo install hpnc
+RUN cargo install hpn
 
 # Build bot
 FROM node:alpine AS builder
