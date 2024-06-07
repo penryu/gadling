@@ -101,7 +101,7 @@ async function lookup(thing: string): Promise<Result<Array<string>>> {
       .selectFrom('facts')
       .select('fact')
       .where('thing', '=', thing)
-      .where('inactive', '=', sql`FALSE`)
+      .where('inactive', '=', false)
       .orderBy('fact')
       .limit(100)
       .execute();
@@ -130,7 +130,7 @@ async function search(
       .where((eb) =>
         eb.or([eb('thing', 'like', sqlTerm), eb('fact', 'like', sqlTerm)]),
       )
-      .where('inactive', '=', sql`FALSE`)
+      .where('inactive', '=', false)
       .orderBy(['thing', 'fact'])
       .limit(500)
       .execute();
@@ -165,10 +165,10 @@ export const init: PluginInit = (pm) => {
       say: SayFn;
       timestamp: string;
     }) =>
-    async (emoji: Emoji, message?: string) => {
-      await pm.app.client.reactions.add({ channel, timestamp, name: emoji });
-      if (message) await say(message);
-    };
+      async (emoji: Emoji, message?: string) => {
+        await pm.app.client.reactions.add({ channel, timestamp, name: emoji });
+        if (message) await say(message);
+      };
 
   pm.command(
     'forget',

@@ -5,6 +5,7 @@ RUN cargo install hpn
 # Build bot
 FROM node:alpine AS builder
 WORKDIR /work
+RUN apk add --no-cache alpine-sdk python3
 COPY . .
 RUN yarn install --frozen-lockfile
 RUN yarn build
@@ -14,16 +15,16 @@ FROM node:alpine
 WORKDIR /app
 
 ENV TZ=US/Pacific
-RUN apk add --no-cache tzdata
-RUN cp /usr/share/zoneinfo/US/Pacific /etc/localtime
-
-COPY words /usr/share/dict/words
 
 COPY --from=hpnc /usr/local/cargo/bin/hpnc /usr/local/bin
 COPY --from=builder /work/package.json .
 COPY --from=builder /work/build build
+COPY words /usr/share/dict/words
 
-# Only non-production modules in final image; cuts image size by ~50%
+RUN apk add --no-cache alpine-sdk python3 tzdata \
+  && cp /usr/share/zoneinfo/US/Pacific /etc/localtime
+
+# Only production modules in final image; cuts image size by ~50%
 RUN yarn install --frozen-lockfile --production
 
 CMD ["node", "build/index.js"]
